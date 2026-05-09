@@ -1,0 +1,55 @@
+:root {
+  --primary: #2855d9;
+  --ok: #198754;
+  --bad: #d63384;
+  --text: #1f2937;
+  --card: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  color: var(--text);
+  background: linear-gradient(140deg, #eef4ff, #f4fcff);
+}
+.app { max-width: 860px; margin: 20px auto; padding: 16px; }
+.hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.hud div, .card, .tip-box, .history {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.progress-wrap { margin: 12px 0; height: 10px; background: #dbeafe; border-radius: 99px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, #2563eb, #06b6d4); transition: width .3s; }
+.options { display: grid; gap: 10px; margin-top: 10px; }
+.option-btn {
+  border: 2px solid #dbeafe;
+  background: #f8fbff;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.option-btn:hover { border-color: var(--primary); }
+.option-btn.correct { border-color: var(--ok); background: #eafaf2; }
+.option-btn.wrong { border-color: var(--bad); background: #fff0f6; }
+.controls { display: flex; gap: 10px; margin: 12px 0; }
+button {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:disabled { background: #94a3b8; cursor: not-allowed; }
+.feedback { min-height: 22px; font-weight: 700; }
+.history ul, .history { margin-top: 12px; }
+#history { padding-left: 20px; }
+#history li { margin: 6px 0; }

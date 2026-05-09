@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contabilidade Hero Pro</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>📊 Contabilidade Hero Pro</h1>
+      <p>Jogo dinâmico para aprender contabilidade financeira básica na prática.</p>
+    </header>
+
+    <section class="hud">
+      <div><strong>Pontos:</strong> <span id="score">0</span></div>
+      <div><strong>Nível:</strong> <span id="level">1</span></div>
+      <div><strong>Vidas:</strong> <span id="lives">3</span></div>
+      <div><strong>Tempo:</strong> <span id="time">20</span>s</div>
+      <div><strong>Combo:</strong> <span id="combo">0</span>x</div>
+      <div><strong>Progresso:</strong> <span id="round">1</span>/<span id="total">12</span></div>
+    </section>
+
+    <div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
+
+    <section id="card" class="card">
+      <h2 id="question">Clique em "Iniciar" para jogar.</h2>
+      <p id="context"></p>
+      <div id="options" class="options"></div>
+      <p id="feedback" class="feedback"></p>
+    </section>
+
+    <section class="controls">
+      <button id="startBtn">Iniciar</button>
+      <button id="nextBtn" disabled>Próxima</button>
+      <button id="restartBtn" disabled>Reiniciar</button>
+    </section>
+
+    <section class="tip-box">
+      <h3>💡 Explicação didática</h3>
+      <p id="tip">Você verá a explicação de cada resposta aqui.</p>
+    </section>
+
+    <section class="history">
+      <h3>📘 Histórico de aprendizado</h3>
+      <ul id="history"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
