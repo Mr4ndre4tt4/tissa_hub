@@ -1,157 +1,135 @@
 const questions = [
-  {
-    q: "Qual demonstração mostra ativos, passivos e patrimônio líquido?",
-    ctx: "Uma empresa quer ver sua posição patrimonial no fim do mês.",
-    options: ["Balanço Patrimonial", "DRE", "Fluxo de Caixa", "Livro Diário"],
-    answer: 0,
-    tip: "O Balanço Patrimonial mostra a posição financeira em uma data específica."
-  },
-  {
-    q: "Se uma empresa compra mercadoria à vista, o que acontece?",
-    ctx: "A compra foi de R$ 1.000 com dinheiro em caixa.",
-    options: ["Aumenta ativo e diminui ativo", "Aumenta passivo", "Diminui patrimônio líquido", "Nada muda"],
-    answer: 0,
-    tip: "Sai caixa (ativo) e entra estoque (ativo): troca entre contas do ativo."
-  },
-  {
-    q: "Receita de vendas afeta diretamente qual demonstração?",
-    ctx: "A loja registrou R$ 5.000 em vendas no mês.",
-    options: ["DRE", "Balanço", "Notas explicativas", "Inventário físico"],
-    answer: 0,
-    tip: "A DRE mostra receitas, custos e despesas para apurar o lucro/prejuízo."
-  },
-  {
-    q: "O que representa o passivo?",
-    ctx: "Pense nas obrigações da empresa com terceiros.",
-    options: ["Bens e direitos", "Dívidas e obrigações", "Lucro acumulado", "Entradas de caixa"],
-    answer: 1,
-    tip: "Passivo = obrigações que a empresa precisa pagar."
-  },
-  {
-    q: "Depreciação de máquinas é classificada como:",
-    ctx: "Perda de valor pelo uso e tempo.",
-    options: ["Receita", "Despesa", "Ativo circulante", "Empréstimo"],
-    answer: 1,
-    tip: "Depreciação é despesa, reduzindo o resultado do período."
-  },
-  {
-    q: "Qual equação contábil básica está correta?",
-    ctx: "Base da contabilidade patrimonial.",
-    options: ["Ativo = Passivo + Patrimônio Líquido", "Passivo = Ativo + Receita", "Patrimônio = Receita - Ativo", "Ativo = Lucro + Despesa"],
-    answer: 0,
-    tip: "Essa é a equação fundamental: recursos = fontes de recursos."
-  },
-  {
-    q: "Pagamento de fornecedor em dinheiro gera:",
-    ctx: "Quitar dívida de R$ 800 com caixa.",
-    options: ["Diminui passivo e diminui ativo", "Aumenta passivo", "Aumenta receita", "Diminui despesa"],
-    answer: 0,
-    tip: "Ao pagar fornecedor, cai caixa (ativo) e cai obrigação (passivo)."
-  },
-  {
-    q: "Qual item é exemplo de ativo circulante?",
-    ctx: "Conta com conversão de curto prazo.",
-    options: ["Máquinas", "Imóvel", "Caixa", "Marca registrada"],
-    answer: 2,
-    tip: "Caixa é ativo circulante por estar disponível de imediato."
-  },
-  {
-    q: "Lucro líquido é, de forma simples:",
-    ctx: "Após considerar receitas e despesas.",
-    options: ["Receitas - despesas", "Ativos - passivos", "Caixa - estoque", "Vendas - caixa"],
-    answer: 0,
-    tip: "Lucro líquido é o resultado final depois dos gastos do período."
-  },
-  {
-    q: "Qual livro registra os fatos contábeis em ordem cronológica?",
-    ctx: "Obrigatório para escrituração.",
-    options: ["Livro Diário", "Livro Razão apenas", "Fluxo de caixa", "Plano de contas"],
-    answer: 0,
-    tip: "Livro Diário registra eventos em sequência temporal."
-  }
+  { q: "Qual demonstração apresenta Ativo, Passivo e Patrimônio Líquido?", ctx: "Fechamento mensal da empresa.", options: ["Balanço Patrimonial", "DRE", "DFC", "DMPL"], answer: 0, tip: "O Balanço mostra a posição patrimonial em uma data.", level: 1 },
+  { q: "Venda a prazo aumenta qual conta no ativo?", ctx: "Venda sem receber no momento.", options: ["Caixa", "Clientes", "Estoque", "Fornecedores"], answer: 1, tip: "Clientes (contas a receber) aumenta no ativo.", level: 1 },
+  { q: "Pagamento de fornecedor à vista causa:", ctx: "Quitar dívida com dinheiro em caixa.", options: ["Ativo + e Passivo +", "Ativo - e Passivo -", "Receita +", "PL +"], answer: 1, tip: "Sai caixa e reduz obrigação com fornecedor.", level: 1 },
+  { q: "Depreciação é classificada na DRE como:", ctx: "Uso de máquina ao longo do tempo.", options: ["Receita", "Despesa", "Investimento", "Empréstimo"], answer: 1, tip: "Depreciação reduz o resultado como despesa.", level: 2 },
+  { q: "Equação contábil correta:", ctx: "Base de toda escrituração.", options: ["Ativo = Passivo + PL", "Ativo = Receita + Despesa", "PL = Caixa - Estoque", "Passivo = Ativo - Receita"], answer: 0, tip: "Recursos (Ativo) vêm de terceiros (Passivo) e sócios (PL).", level: 2 },
+  { q: "Receita de vendas afeta diretamente:", ctx: "Apuração de resultado.", options: ["DRE", "Razão", "Livro Caixa", "Inventário"], answer: 0, tip: "Receitas entram na DRE para formar lucro ou prejuízo.", level: 2 },
+  { q: "Compra de estoque à prazo gera:", ctx: "Sem pagamento imediato.", options: ["Ativo + e Passivo +", "Ativo - e Passivo -", "Só PL +", "Só receita +"], answer: 0, tip: "Entra estoque e nasce obrigação com fornecedor.", level: 3 },
+  { q: "Lucro líquido simplificado é:", ctx: "Ao final do período.", options: ["Receitas - Despesas", "Ativo - Passivo", "Caixa + Clientes", "PL - Ativo"], answer: 0, tip: "Resultado = receitas menos custos e despesas.", level: 3 },
+  { q: "Qual é um ativo circulante?", ctx: "Item de alta liquidez.", options: ["Imóvel", "Máquina", "Caixa", "Patente"], answer: 2, tip: "Caixa é imediatamente disponível.", level: 3 },
+  { q: "Empréstimo bancário recebido aumenta:", ctx: "Entrada de dinheiro via dívida.", options: ["Ativo e Passivo", "Só receita", "Só despesa", "Ativo e reduz passivo"], answer: 0, tip: "Entra caixa (ativo) e surge obrigação (passivo).", level: 4 },
+  { q: "Despesas antecipadas são registradas inicialmente como:", ctx: "Ex.: seguro pago adiantado.", options: ["Passivo", "Ativo", "Receita", "Patrimônio líquido"], answer: 1, tip: "Como benefício futuro, começa no ativo.", level: 4 },
+  { q: "No método das partidas dobradas, cada lançamento deve:", ctx: "Regra de equilíbrio.", options: ["Ter 1 débito só", "Ter débitos = créditos", "Aumentar apenas ativo", "Ser mensal"], answer: 1, tip: "Todo débito precisa de crédito correspondente.", level: 4 }
 ];
 
-let round = 0, score = 0, lives = 3;
-let answered = false;
+let round=0,score=0,lives=3,combo=0,timeLeft=20,timer=null,answered=false;
+const el = (id)=>document.getElementById(id);
+el("total").textContent = questions.length;
 
-const el = id => document.getElementById(id);
-
-function updateHUD() {
-  el("score").textContent = score;
-  el("round").textContent = Math.min(round + 1, questions.length);
-  el("lives").textContent = lives;
+function updateHUD(){
+  el("score").textContent=score;
+  el("level").textContent=questions[Math.min(round,questions.length-1)].level;
+  el("lives").textContent=lives;
+  el("combo").textContent=combo;
+  el("round").textContent=Math.min(round+1,questions.length);
+  el("time").textContent=timeLeft;
+  el("progressBar").style.width = `${(round/questions.length)*100}%`;
 }
 
-function renderQuestion() {
-  const item = questions[round];
-  el("question").textContent = item.q;
-  el("context").textContent = item.ctx;
-  el("feedback").textContent = "";
-  el("tip").textContent = "Responda para ver a explicação didática.";
-  answered = false;
-  el("nextBtn").disabled = true;
+function startTimer(){
+  clearInterval(timer);
+  timeLeft=20;
+  updateHUD();
+  timer=setInterval(()=>{
+    timeLeft--; updateHUD();
+    if(timeLeft<=0){
+      clearInterval(timer);
+      if(!answered){
+        lives--; combo=0; answered=true;
+        el("feedback").textContent="⏱️ Tempo esgotado!";
+        revealCorrect();
+        el("tip").textContent=questions[round].tip;
+        finalizeTurn(false);
+      }
+    }
+  },1000);
+}
 
-  const optionsBox = el("options");
-  optionsBox.innerHTML = "";
-  item.options.forEach((opt, idx) => {
-    const btn = document.createElement("button");
-    btn.className = "option-btn";
-    btn.textContent = opt;
-    btn.onclick = () => checkAnswer(idx, btn);
-    optionsBox.appendChild(btn);
+function renderQuestion(){
+  answered=false;
+  el("nextBtn").disabled=true;
+  el("feedback").textContent="";
+  const item=questions[round];
+  el("question").textContent=item.q;
+  el("context").textContent=`Nível ${item.level}: ${item.ctx}`;
+  el("tip").textContent="Responda para ver a explicação.";
+  const box=el("options"); box.innerHTML="";
+  item.options.forEach((opt,idx)=>{
+    const btn=document.createElement("button");
+    btn.className="option-btn";
+    btn.textContent=opt;
+    btn.onclick=()=>checkAnswer(idx,btn);
+    box.appendChild(btn);
   });
   updateHUD();
+  startTimer();
 }
 
-function checkAnswer(idx, btn) {
-  if (answered) return;
-  answered = true;
-  const item = questions[round];
-  const buttons = [...document.querySelectorAll(".option-btn")];
+function revealCorrect(){
+  const buttons=[...document.querySelectorAll('.option-btn')];
+  buttons.forEach(b=>b.disabled=true);
+  if(buttons[questions[round].answer]) buttons[questions[round].answer].classList.add('correct');
+}
 
-  if (idx === item.answer) {
-    score += 10;
-    btn.classList.add("correct");
-    el("feedback").textContent = "✅ Correto! +10 pontos.";
-  } else {
-    lives -= 1;
-    btn.classList.add("wrong");
-    buttons[item.answer].classList.add("correct");
-    el("feedback").textContent = "❌ Resposta incorreta.";
-  }
+function logHistory(ok){
+  const li=document.createElement('li');
+  li.textContent=`${questions[round].q} — ${ok?"Acertou":"Errou"}. ${questions[round].tip}`;
+  el('history').appendChild(li);
+}
 
-  buttons.forEach(b => b.disabled = true);
-  el("tip").textContent = item.tip;
+function finalizeTurn(ok){
   updateHUD();
-
-  if (lives <= 0 || round === questions.length - 1) {
+  logHistory(ok);
+  if(lives<=0 || round===questions.length-1){
     endGame();
-  } else {
-    el("nextBtn").disabled = false;
+  }else{
+    el("nextBtn").disabled=false;
   }
 }
 
-function nextRound() {
-  if (round < questions.length - 1) {
-    round += 1;
-    renderQuestion();
+function checkAnswer(idx,btn){
+  if(answered) return;
+  answered=true;
+  clearInterval(timer);
+  const item=questions[round];
+  const buttons=[...document.querySelectorAll('.option-btn')];
+  buttons.forEach(b=>b.disabled=true);
+
+  if(idx===item.answer){
+    combo++;
+    const bonus = combo>=3 ? 5 : 0;
+    score += 10 + bonus;
+    btn.classList.add('correct');
+    el("feedback").textContent = bonus ? `✅ Correto! Combo ${combo}x (+15).` : "✅ Correto! +10.";
+    el("tip").textContent=item.tip;
+    finalizeTurn(true);
+  }else{
+    combo=0; lives--;
+    btn.classList.add('wrong');
+    buttons[item.answer].classList.add('correct');
+    el("feedback").textContent="❌ Incorreto.";
+    el("tip").textContent=item.tip;
+    finalizeTurn(false);
   }
 }
 
-function endGame() {
-  el("nextBtn").disabled = true;
-  el("restartBtn").disabled = false;
-  const result = lives <= 0 ? "Você perdeu suas vidas." : "Você concluiu o desafio.";
-  el("question").textContent = `${result} Pontuação final: ${score}`;
-  el("context").textContent = "Clique em Reiniciar para jogar novamente e reforçar o aprendizado.";
+function nextRound(){ round++; renderQuestion(); }
+function endGame(){
+  clearInterval(timer);
+  el("nextBtn").disabled=true;
+  el("restartBtn").disabled=false;
+  el("progressBar").style.width = `100%`;
+  const msg = lives<=0 ? "Fim de jogo: vidas zeradas." : "Parabéns! Você concluiu todos os desafios.";
+  el("question").textContent=`${msg} Pontuação final: ${score}`;
+  el("context").textContent="Revise o histórico para reforçar os conceitos.";
 }
-
-function startGame() {
-  round = 0; score = 0; lives = 3;
-  el("restartBtn").disabled = true;
+function startGame(){
+  round=0;score=0;lives=3;combo=0;el('history').innerHTML="";
+  el("restartBtn").disabled=true;
   renderQuestion();
 }
 
-el("startBtn").onclick = startGame;
-el("nextBtn").onclick = nextRound;
-el("restartBtn").onclick = startGame;
+el("startBtn").onclick=startGame;
+el("nextBtn").onclick=nextRound;
+el("restartBtn").onclick=startGame;
