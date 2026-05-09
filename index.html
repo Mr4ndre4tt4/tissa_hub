@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contabilidade Hero</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>📊 Contabilidade Hero</h1>
+      <p>Aprenda contabilidade financeira básica jogando.</p>
+    </header>
+
+    <section class="hud">
+      <div><strong>Pontuação:</strong> <span id="score">0</span></div>
+      <div><strong>Fase:</strong> <span id="round">1</span>/10</div>
+      <div><strong>Vidas:</strong> <span id="lives">3</span></div>
+    </section>
+
+    <section id="card" class="card">
+      <h2 id="question">Clique em "Começar jogo" para iniciar.</h2>
+      <p id="context"></p>
+      <div id="options" class="options"></div>
+      <p id="feedback" class="feedback"></p>
+    </section>
+
+    <section class="controls">
+      <button id="startBtn">Começar jogo</button>
+      <button id="nextBtn" disabled>Próxima pergunta</button>
+      <button id="restartBtn" disabled>Reiniciar</button>
+    </section>
+
+    <section class="tip-box">
+      <h3>💡 Dica didática</h3>
+      <p id="tip">Cada pergunta traz uma mini explicação para fixar o conceito.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
