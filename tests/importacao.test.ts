@@ -42,9 +42,9 @@ function aceitarPadrao(previa: Previa): DecisoesDaCarga {
 
 describe('AC-001 / AC-002 — carga inicial e reimportação de CSV', () => {
   const csv = csvIncidentes([
-    'IR32000001;Falha no relatório;Working;04/09/2026 14:00:00;AMS SAP FI;BASELINE',
-    'IR32000002;Erro de lançamento;Wait on User;04/09/2026 15:00:00;AMS SAP CO;MELHORIA SQUAD',
-    'IR32000003;Ajuste de layout;Updated;04/09/2026 16:00:00;AMS SAP FI;TASK FORCE',
+    'IR90001001;Falha no relatório;Working;04/09/2026 14:00:00;AMS SAP FI;BASELINE',
+    'IR90001002;Erro de lançamento;Wait on User;04/09/2026 15:00:00;AMS SAP CO;MELHORIA SQUAD',
+    'IR90001003;Ajuste de layout;Updated;04/09/2026 16:00:00;AMS SAP FI;TASK FORCE',
   ]);
 
   it('AC-001: cria 3 chamados e nenhuma hora', () => {
@@ -76,7 +76,7 @@ describe('AC-001 / AC-002 — carga inicial e reimportação de CSV', () => {
 });
 
 describe('AC-003 a AC-006 — atualização oficial', () => {
-  const inicial = csvIncidentes(['IR32000001;Título original;Working;04/09/2026 14:00:00;AMS;BASELINE']);
+  const inicial = csvIncidentes(['IR90001001;Título original;Working;04/09/2026 14:00:00;AMS;BASELINE']);
 
   function comBase() {
     const base = baseVazia();
@@ -114,7 +114,7 @@ describe('AC-003 a AC-006 — atualização oficial', () => {
       versao: 1,
     });
 
-    const novo = csvIncidentes(['IR32000001;Título oficial novo;Wait on User;05/09/2026 09:00:00;AMS;BASELINE']);
+    const novo = csvIncidentes(['IR90001001;Título oficial novo;Wait on User;05/09/2026 09:00:00;AMS;BASELINE']);
     const p = previaCsv(r1, doc({ sha256: 'hash-2' }), lerCsvCs3(novo));
     expect(p.contagens.alterado).toBe(1);
 
@@ -132,7 +132,7 @@ describe('AC-003 a AC-006 — atualização oficial', () => {
 
   it('AC-004: versão mais antiga não regride e a decisão fica registrada', () => {
     const r1 = comBase();
-    const antigo = csvIncidentes(['IR32000001;Título antigo;Working;01/09/2026 08:00:00;AMS;BASELINE']);
+    const antigo = csvIncidentes(['IR90001001;Título antigo;Working;01/09/2026 08:00:00;AMS;BASELINE']);
     const p = previaCsv(r1, doc({ sha256: 'hash-3' }), lerCsvCs3(antigo));
 
     expect(p.contagens.versao_antiga).toBe(1);
@@ -146,7 +146,7 @@ describe('AC-003 a AC-006 — atualização oficial', () => {
 
   it('AC-005: mesma versão com conteúdo diferente é conflito, não decisão pela ordem', () => {
     const r1 = comBase();
-    const empate = csvIncidentes(['IR32000001;Título divergente;Working;04/09/2026 14:00:00;AMS;BASELINE']);
+    const empate = csvIncidentes(['IR90001001;Título divergente;Working;04/09/2026 14:00:00;AMS;BASELINE']);
     const p = previaCsv(r1, doc({ sha256: 'hash-4' }), lerCsvCs3(empate));
 
     expect(p.contagens.conflito).toBe(1);
@@ -161,27 +161,27 @@ describe('AC-003 a AC-006 — atualização oficial', () => {
 
   it('AC-006: ausência na carga preserva o chamado, sem encerrá-lo', () => {
     const r1 = comBase();
-    const outro = csvIncidentes(['IR32000099;Outro chamado;Working;05/09/2026 09:00:00;AMS;BASELINE']);
+    const outro = csvIncidentes(['IR90001099;Outro chamado;Working;05/09/2026 09:00:00;AMS;BASELINE']);
     const p = previaCsv(r1, doc({ sha256: 'hash-5' }), lerCsvCs3(outro));
 
     const ausente = p.itens.find((i) => i.classe === 'ausente_na_carga');
     expect(ausente).toBeDefined();
-    expect(ausente!.rotulo).toBe('IR32000001');
+    expect(ausente!.rotulo).toBe('IR90001001');
     expect(ausente!.descricao).toMatch(/preservad/i);
 
     const r2 = aplicarPrevia(r1, p, aceitarPadrao(p), 'op-2').revisao;
     expect(r2.tickets).toHaveLength(2);
-    expect(r2.tickets.find((t) => t.sourceTicketId === 'IR32000001')!.oficial!.statusBruto).toBe('Working');
+    expect(r2.tickets.find((t) => t.sourceTicketId === 'IR90001001')!.oficial!.statusBruto).toBe('Working');
   });
 });
 
 describe('AC-010 — incidentes e requisições são namespaces separados', () => {
   it('o mesmo número em perfis diferentes são identidades diferentes', () => {
     const base = baseVazia();
-    const pInc = previaCsv(base, doc(), lerCsvCs3(csvIncidentes(['IR32000001;T;Working;04/09/2026 14:00:00;;'])));
+    const pInc = previaCsv(base, doc(), lerCsvCs3(csvIncidentes(['IR90001001;T;Working;04/09/2026 14:00:00;;'])));
     const r1 = aplicarPrevia(base, pInc, aceitarPadrao(pInc), 'op-1').revisao;
 
-    const req = `${CAB_REQ}\nIR32000001;T req;Working;04/09/2026 14:00:00;Média\n`;
+    const req = `${CAB_REQ}\nIR90001001;T req;Working;04/09/2026 14:00:00;Média\n`;
     const pReq = previaCsv(r1, doc({ tipo: 'csv_requisicoes', perfil: 'requisicoes', sha256: 'h2' }), lerCsvCs3(req));
     expect(pReq.contagens.novo).toBe(1);
 
@@ -248,7 +248,7 @@ const docXlsm = () =>
 describe('AC-024 / AC-026 — apontamentos do XLSM', () => {
   it('AC-026: horas sem cadastro criam referência e o CSV posterior completa sem duplicar', () => {
     const base = baseVazia();
-    const leitura = { ...leituraXlsmVazia(), apontamentos: [apont({ linha: 10, referenciaBruta: 'IR32000001' })] };
+    const leitura = { ...leituraXlsmVazia(), apontamentos: [apont({ linha: 10, referenciaBruta: 'IR90001001' })] };
     const p = previaXlsm(base, docXlsm(), leitura);
     const r1 = aplicarPrevia(base, p, aceitarPadrao(p), 'op-1').revisao;
 
@@ -257,7 +257,7 @@ describe('AC-024 / AC-026 — apontamentos do XLSM', () => {
     // O vínculo existe, mas ainda não aponta para um ticket oficial.
     expect(r1.timeEntryReferences[0]!.ticketId).toBeNull();
 
-    const csv = csvIncidentes(['IR32000001;Chamado oficial;Working;04/09/2026 14:00:00;AMS;BASELINE']);
+    const csv = csvIncidentes(['IR90001001;Chamado oficial;Working;04/09/2026 14:00:00;AMS;BASELINE']);
     const p2 = previaCsv(r1, doc({ sha256: 'h-csv' }), lerCsvCs3(csv));
     const r2 = aplicarPrevia(r1, p2, aceitarPadrao(p2), 'op-2').revisao;
 

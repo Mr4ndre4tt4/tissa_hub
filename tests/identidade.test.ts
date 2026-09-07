@@ -59,7 +59,7 @@ describe('AC-032 — referências compostas e namespaces', () => {
   });
 
   it('RITM e INC não são tratados como IR/RR', () => {
-    expect(lerReferencia('RITM0012345').candidatos[0]!.namespace).toBe('RITM');
+    expect(lerReferencia('RITM90000030').candidatos[0]!.namespace).toBe('RITM');
     expect(lerReferencia('INC90000018').candidatos[0]!.namespace).toBe('INC');
   });
 
@@ -99,8 +99,8 @@ describe('AC-033 — espaços, caixa e identidade', () => {
 
 describe('AC-027 — referências citadas em texto livre (C194)', () => {
   it('sugere os dois incidentes sem escolher um arbitrariamente', () => {
-    const achados = referenciasCitadasEmTexto('Analisado junto ao IR32000001 e ao IR32000002 na mesma reunião');
-    expect(achados.map((r) => r.normalizado)).toEqual(['IR32000001', 'IR32000002']);
+    const achados = referenciasCitadasEmTexto('Analisado junto ao IR90001001 e ao IR90001002 na mesma reunião');
+    expect(achados.map((r) => r.normalizado)).toEqual(['IR90001001', 'IR90001002']);
   });
 
   it('não inventa referência onde não há', () => {

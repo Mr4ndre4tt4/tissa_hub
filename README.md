@@ -11,7 +11,14 @@ sem banco de dados externo.
 > com o que foi testado e o que não foi, está em
 > [`docs/RELATORIO_DE_ENTREGA.md`](docs/RELATORIO_DE_ENTREGA.md).
 
-Especificação de origem: [`especificacao/ESPECIFICACAO_FINAL_PARA_IA.md`](especificacao/ESPECIFICACAO_FINAL_PARA_IA.md), versão 4.0.
+Especificação de origem: `ESPECIFICACAO_FINAL_PARA_IA.md`, versão 4.0.
+
+> **O pacote da especificação não está neste repositório.** Ele cita números de
+> chamado e estatísticas de trabalho do cliente, e este repositório é público.
+> Mantenha-o localmente em `especificacao/` (já ignorado pelo git). Os contratos
+> que o código realmente consome — tokens visuais, fixtures sintéticas e o
+> exemplo de configuração pública — estão versionados em `contratos/`, sem
+> nenhum dado real.
 
 ## O que a ferramenta faz
 
@@ -59,8 +66,11 @@ npm run verificar:interface # navegador real: responsividade, foco, console
 Com os insumos reais, **apenas em ambiente autorizado**:
 
 ```bash
-npm run baseline -- "/caminho/central_chamados_produtividade_aprimorado (1).xlsm"
+# CENTRAL_CONTRATOS aponta para a pasta de contratos do pacote da especificação.
+CENTRAL_CONTRATOS=especificacao/contratos \
+  npm run baseline -- "/caminho/central_chamados_produtividade_aprimorado (1).xlsm"
 
+CENTRAL_CONTRATOS=especificacao/contratos \
 CENTRAL_XLSM="…" CENTRAL_CSV_INC="…" CENTRAL_CSV_REQ="…" npm run test:restrito
 ```
 
@@ -87,7 +97,7 @@ src/
   fixtures/           dados sintéticos do modo demonstrativo
 tests/                suíte automática (sintética)
 tests/restrito/       testes com os insumos reais, fora da suíte automática
-especificacao/        documento mestre, contratos e referências
+contratos/            contratos versionados: tokens, fixtures e config de exemplo
 docs/                 decisões, operação, relatório e evidências
 ```
 

@@ -6,7 +6,7 @@ import {
   textoHoraParaMinutos,
   validarNovaDuracao,
 } from '../src/domain/time/duracao';
-import fixtures from '../especificacao/contratos/fixtures_sinteticas.json';
+import fixtures from '../contratos/fixtures_sinteticas.json';
 
 describe('AC-016 / AC-017 — conversão de duração do Excel', () => {
   it('0,125 vira 180 minutos, não 0,125 hora', () => {

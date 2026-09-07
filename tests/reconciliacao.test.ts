@@ -7,7 +7,7 @@ import {
   type CandidatoOrigem,
   type RegistroConhecido,
 } from '../src/domain/reconciliation/multiplicidade';
-import fixtures from '../especificacao/contratos/fixtures_sinteticas.json';
+import fixtures from '../contratos/fixtures_sinteticas.json';
 
 describe('AC-037 — comparação em três estados', () => {
   it('S = B mantém a edição local (A)', () => {

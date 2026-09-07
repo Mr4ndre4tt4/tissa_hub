@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import tokens from '../especificacao/contratos/design_tokens.json';
+import tokens from '../contratos/design_tokens.json';
 
 const css = readFileSync(new URL('../src/design/tokens.css', import.meta.url), 'utf8');
 

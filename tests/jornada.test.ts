@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diasVencidosIncompletos, metaDaData, metaDoPeriodo, saldoDoDia } from '../src/domain/time/jornada';
 import { apontamento, jornadaPadrao } from './apoio/construtores';
-import fixtures from '../especificacao/contratos/fixtures_sinteticas.json';
+import fixtures from '../contratos/fixtures_sinteticas.json';
 
 const SEG = '2026-09-07'; // segunda-feira
 const SAB = '2026-09-05'; // sábado

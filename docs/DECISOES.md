@@ -192,3 +192,25 @@ os domínios do Graph e do login Microsoft. O favicon é um SVG embutido.
 **Por quê.** Secção 17: HTTPS, CSP restritiva, texto importado escapado,
 dependências verificadas, nenhum rastreador. Nenhuma fonte é baixada de origem
 externa — a Magnetik não foi fornecida e o fallback do sistema está declarado.
+
+
+---
+
+## 10. Especificação fora do controle de versão
+
+**Decisão.** `especificacao/` está no `.gitignore`. Os contratos versionados
+ficam em `contratos/` e contêm apenas tokens visuais, fixtures sintéticas e o
+esquema de configuração pública.
+
+**Por quê.** O repositório é público. O documento mestre e o arquivo de
+interpretação da planilha citam números de chamado reais; o baseline e o perfil
+descrevem o volume de trabalho da pessoa e trazem os hashes dos insumos. A
+secção 2.2 da especificação é explícita: “o pacote não deve ser publicado ou
+anexado a um ambiente de desenvolvimento sem autorização adequada”.
+
+**Consequência prática.** O script de baseline e a suíte restrita carregam
+`baseline_xlsm.json` e `manifesto_fontes.json` em tempo de execução, pelo
+caminho em `CENTRAL_CONTRATOS` (padrão `especificacao/contratos`), em vez de
+importá-los estaticamente. Assim o projeto compila e os testes sintéticos rodam
+sem o pacote presente, e a conferência com o arquivo real continua possível no
+ambiente autorizado.

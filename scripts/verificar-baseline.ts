@@ -12,7 +12,25 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { lerLivro } from '../src/domain/sources/ooxml';
 import { lerXlsmCentral } from '../src/domain/sources/xlsm';
-import baseline from '../especificacao/contratos/baseline_xlsm.json';
+/**
+ * Os contratos derivados do arquivo real (baseline e manifesto) NÃO são
+ * versionados: o repositório é público e eles descrevem o trabalho do cliente.
+ * O caminho vem de CENTRAL_CONTRATOS, com o local do pacote como padrão.
+ */
+const DIR_CONTRATOS = process.env.CENTRAL_CONTRATOS ?? 'especificacao/contratos';
+const baseline = JSON.parse(readFileSync(`${DIR_CONTRATOS}/baseline_xlsm.json`, 'utf8')) as {
+  sha256: string;
+  sheets: number;
+  source_rows: Record<string, number>;
+  input_rows_with_material_content: number;
+  numeric_duration_rows: number;
+  numeric_duration_minutes_gross: number;
+  numeric_duration_period: [string, string];
+  date_range_in_input_rows: [string, string];
+  calendar_days_with_numeric_duration: number;
+  personal_status_distribution: Record<string, number>;
+  external_formula_cells: { sheet: string; cell: string }[];
+};
 
 const caminho = process.argv[2];
 if (!caminho) {

@@ -91,41 +91,41 @@ describe('AC-010 — tipo vem do esquema, não do texto', () => {
 
   it('External e Reference ID não viram tickets adicionais', () => {
     const c = new Array(24).fill('');
-    c[0] = 'IR32000001';
+    c[0] = 'IR90001001';
     c[2] = 'Título';
     c[4] = 'Working';
-    c[12] = 'RR11111111'; // External
+    c[12] = 'RR90000031'; // External
     c[13] = 'REF-999'; // Reference ID
     c[16] = '04/09/2026 14:35:12';
     const r = lerCsvCs3(`${CAB_INC}\n${c.join(';')}\n`);
     expect(r.registros).toHaveLength(1);
-    expect(r.registros[0]!.sourceTicketId).toBe('IR32000001');
-    expect(r.registros[0]!.oficial.external).toBe('RR11111111');
+    expect(r.registros[0]!.sourceTicketId).toBe('IR90001001');
+    expect(r.registros[0]!.oficial.external).toBe('RR90000031');
     expect(r.registros[0]!.oficial.referenceId).toBe('REF-999');
   });
 });
 
 describe('campos obrigatórios e pendências de cronologia', () => {
   it('linha completa fica pronta', () => {
-    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR32000001')}\n`);
+    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR90001001')}\n`);
     expect(r.registros[0]!.estado).toBe('ready');
     expect(r.registros[0]!.problemas).toEqual([]);
   });
 
   it('Last Update Time inválido deixa a linha incompleta', () => {
-    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR32000002', { lastUpdate: 'ontem' })}\n`);
+    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR90001002', { lastUpdate: 'ontem' })}\n`);
     expect(r.registros[0]!.estado).toBe('incomplete');
   });
 
   it('Start Time incoerente vira pendência sem inventar abertura', () => {
-    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR32000003', { start: '31/02/2026 09:00:00' })}\n`);
+    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR90001003', { start: '31/02/2026 09:00:00' })}\n`);
     expect(r.registros[0]!.estado).toBe('needs_review');
     expect(r.registros[0]!.problemas.join(' ')).toContain('Start Time');
     expect(r.registros[0]!.oficial.startTimeBruto).toBe('31/02/2026 09:00:00');
   });
 
   it('Start Time ausente não invalida a linha', () => {
-    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR32000004', { start: '' })}\n`);
+    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR90001004', { start: '' })}\n`);
     expect(r.registros[0]!.estado).toBe('ready');
     expect(r.registros[0]!.oficial.startTimeBruto).toBeNull();
   });
@@ -139,7 +139,7 @@ describe('AC-007 / secção 8.2 — colunas ausentes e vazias', () => {
   });
 
   it('coluna presente e vazia é preservada como vazia', () => {
-    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR32000005')}\n`);
+    const r = lerCsvCs3(`${CAB_INC}\n${linhaIncidente('IR90001005')}\n`);
     expect(r.registros[0]!.oficial.impact).toBeNull();
   });
 
@@ -152,12 +152,12 @@ describe('AC-007 / secção 8.2 — colunas ausentes e vazias', () => {
 
 describe('AC-001 — contagem da primeira importação', () => {
   it('3 incidentes + 13 requisições = 16 identidades, sem criar horas', () => {
-    const inc = [1, 2, 3].map((n) => linhaIncidente(`IR3200000${n}`)).join('\n');
+    const inc = [1, 2, 3].map((n) => linhaIncidente(`IR9000100${n}`)).join('\n');
     const csvInc = lerCsvCs3(`${CAB_INC}\n${inc}\n`);
 
     const reqLinhas = Array.from({ length: 13 }, (_, i) => {
       const c = new Array(23).fill('');
-      c[0] = `RR2300000${i}`;
+      c[0] = `RR9000200${i}`;
       c[2] = 'Requisição sintética';
       c[4] = 'Wait on User';
       c[15] = '04/09/2026 14:35:12';

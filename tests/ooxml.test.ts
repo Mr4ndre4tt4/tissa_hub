@@ -157,7 +157,7 @@ describe('AC-058 — exportação trata conteúdo como texto', () => {
     expect(neutralizarFormula('=SOMA(A1:A9)')).toBe("'=SOMA(A1:A9)");
     expect(neutralizarFormula('+1')).toBe("'+1");
     expect(neutralizarFormula('@import')).toBe("'@import");
-    expect(neutralizarFormula('IR32000001')).toBe('IR32000001');
+    expect(neutralizarFormula('IR90001001')).toBe('IR90001001');
   });
 
   it('o XLSX gerado é relido com o conteúdo como texto, nunca como fórmula', () => {

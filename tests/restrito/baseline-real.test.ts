@@ -22,8 +22,21 @@ import { lerXlsmCentral, type LeituraXlsm } from '../../src/domain/sources/xlsm'
 import { lerCsvCs3 } from '../../src/domain/sources/csv';
 import { lerReferencia, normalizarParaComparacao, referenciasCitadasEmTexto } from '../../src/domain/entities/identidade';
 import { detectarRepeticoesNaCarga } from '../../src/domain/reconciliation/multiplicidade';
-import baseline from '../../especificacao/contratos/baseline_xlsm.json';
-import manifesto from '../../especificacao/contratos/manifesto_fontes.json';
+/**
+ * Baseline e manifesto descrevem o arquivo real e por isso NÃO são versionados
+ * neste repositório público. Aponte CENTRAL_CONTRATOS para a pasta de contratos
+ * do pacote da especificação ao rodar esta suíte.
+ */
+const DIR_CONTRATOS = process.env.CENTRAL_CONTRATOS ?? 'especificacao/contratos';
+const baseline = JSON.parse(readFileSync(`${DIR_CONTRATOS}/baseline_xlsm.json`, 'utf8')) as {
+  sha256: string;
+  rows_with_duration_without_id: number[];
+  external_formula_cells: { sheet: string; cell: string }[];
+  time_duplicate_candidates: [number, number][];
+};
+const manifesto = JSON.parse(readFileSync(`${DIR_CONTRATOS}/manifesto_fontes.json`, 'utf8')) as {
+  files: { path: string; sha256: string }[];
+};
 
 const CAMINHO_XLSM = process.env.CENTRAL_XLSM;
 const CAMINHO_INC = process.env.CENTRAL_CSV_INC;

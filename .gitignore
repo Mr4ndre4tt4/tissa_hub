@@ -20,3 +20,9 @@ coverage/
 *.log
 playwright/.auth/
 test-results/
+
+# Pacote da especificação e contratos derivados do arquivo real.
+# O repositório é PÚBLICO e esses documentos citam números de chamado e
+# estatísticas de trabalho do cliente. Ficam fora do controle de versão; os
+# contratos que o código realmente consome estão em contratos/, sem dado real.
+especificacao/

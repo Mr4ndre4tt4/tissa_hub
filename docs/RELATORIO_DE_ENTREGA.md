@@ -355,12 +355,29 @@ Verificação executada sobre `dist/`, `src/` e os arquivos versionados:
   `insumos_privados/`, `**/*.xlsm`, `**/*.xlsx`, `exports/`, `recovery/` e `.env`;
 - as capturas em `docs/evidencias/` usam exclusivamente o modo demonstrativo.
 
-> **Ponto que precisa da sua decisão.** A pasta `especificacao/` foi versionada
-> por conter os contratos que o código consome (tokens, perfil, baseline,
-> critérios de aceite). Esses documentos citam números de chamado reais nas
-> evidências da secção 10.6. Se o repositório `mr4ndre4tt4/tissa_hub` for
-> público ou vier a ser, **essa pasta deve sair do controle de versão**. Diga se
-> devo removê-la e manter apenas os contratos estritamente necessários ao build.
+### Decisão tomada sobre o pacote da especificação
+
+O repositório `Mr4ndre4tt4/tissa_hub` é **público** (confirmado pela API do
+GitHub: `visibility: public`). O pacote da especificação cita números de chamado
+reais (secção 10.6 do documento mestre e o arquivo de interpretação da planilha)
+e estatísticas de trabalho da pessoa — inclusive o total de 561h33 e os hashes
+dos insumos.
+
+Por isso, **`especificacao/` foi retirada do controle de versão** e acrescentada
+ao `.gitignore`. Nada dela foi publicado. O que ficou versionado:
+
+- `contratos/design_tokens.json` — cores e medidas da marca, sem dado do cliente;
+- `contratos/fixtures_sinteticas.json` — exemplos inventados (faixa `9xxxxxxx`);
+- `contratos/configuracao_publica.exemplo.json` — esquema de configuração, com
+  `null` onde falta entrada real.
+
+O `baseline_xlsm.json` e o `manifesto_fontes.json` **não** são versionados: o
+script de baseline e a suíte restrita os carregam em tempo de execução, pelo
+caminho em `CENTRAL_CONTRATOS`. Mantenha o pacote completo localmente, no mesmo
+ambiente autorizado onde ficam os insumos privados.
+
+Se você preferir versionar a especificação, o caminho seguro é tornar o
+repositório privado antes — não o contrário.
 
 ---
 

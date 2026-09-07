@@ -6,7 +6,7 @@ import {
   validarAlocacoes,
 } from '../src/domain/time/alocacao';
 import { alocacao, apontamento, idSintetico, referencia } from './apoio/construtores';
-import fixtures from '../especificacao/contratos/fixtures_sinteticas.json';
+import fixtures from '../contratos/fixtures_sinteticas.json';
 
 const TICKET_A = idSintetico('t');
 const TICKET_B = idSintetico('t');
