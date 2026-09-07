@@ -20,7 +20,8 @@ import { createHash } from 'node:crypto';
 import { lerLivro, type LivroOoxml } from '../../src/domain/sources/ooxml';
 import { lerXlsmCentral, type LeituraXlsm } from '../../src/domain/sources/xlsm';
 import { lerCsvCs3 } from '../../src/domain/sources/csv';
-import { lerReferencia, referenciasCitadasEmTexto } from '../../src/domain/entities/identidade';
+import { lerReferencia, normalizarParaComparacao, referenciasCitadasEmTexto } from '../../src/domain/entities/identidade';
+import { detectarRepeticoesNaCarga } from '../../src/domain/reconciliation/multiplicidade';
 import baseline from '../../especificacao/contratos/baseline_xlsm.json';
 import manifesto from '../../especificacao/contratos/manifesto_fontes.json';
 
@@ -156,9 +157,39 @@ describe.runIf(temXlsm)('AC-011 / AC-074 — XLSM real, somente leitura', () => 
     for (const c of comEspaco) expect(c.statusBruto!.trim()).toBe('Transferido');
   });
 
-  it('AC-012: Planilha1 tem 97 referências e fica fora da carga principal', () => {
+  it('AC-012: Planilha1 tem 97 referências, 14 status divergentes, e fica fora da carga principal', () => {
     expect(leitura.planilha1).toHaveLength(97);
     expect(leitura.chamados).toHaveLength(106);
+
+    // As 97 referências da cópia também existem no cadastro principal.
+    const porRef = new Map(leitura.chamados.map((c) => [normalizarParaComparacao(c.referenciaBruta ?? ''), c]));
+    const sobrepostas = leitura.planilha1.filter((p) => porRef.has(normalizarParaComparacao(p.referenciaBruta ?? '')));
+    expect(sobrepostas).toHaveLength(97);
+
+    // Divergências de status entre a cópia e o cadastro: sinalizadas, não aplicadas.
+    const divergentes = sobrepostas.filter((p) => {
+      const c = porRef.get(normalizarParaComparacao(p.referenciaBruta ?? ''))!;
+      return (p.statusBruto ?? '').trim() !== (c.statusBruto ?? '').trim();
+    });
+    expect(divergentes).toHaveLength(14);
+  });
+
+  it('AC-035: os quatro pares candidatos a repetição são detectados na carga real', () => {
+    const candidatos = leitura.apontamentos.map((a) => ({
+      linha: a.linha,
+      workDate: a.workDate,
+      referenciaBruta: a.referenciaBruta,
+      descricao: a.descricao,
+      duracaoMinutos: a.duracaoMinutos,
+      tipoAtuacao: a.tipoAtuacao,
+      observacoes: a.observacoes,
+    }));
+    const pares = detectarRepeticoesNaCarga(candidatos).map((p) => [p.a.linha, p.b.linha]);
+    for (const esperado of baseline.time_duplicate_candidates) {
+      expect(pares, `o par ${esperado.join('/')} deveria virar pendência`).toContainEqual(esperado);
+    }
+    // Nenhuma linha foi removida da leitura por ser candidata a repetição.
+    expect(leitura.apontamentos).toHaveLength(333);
   });
 
   it('AC-014: 70 resoluções e 16 eventos, mesmo distantes do início', () => {
