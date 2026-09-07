@@ -1,0 +1,53 @@
+{
+  "notice": "Esquema de configuração a implementar. Null significa entrada real ainda não fornecida, não um segredo fictício.",
+  "specVersion": "4.0",
+  "appName": "Central de Chamados",
+  "auth": {
+    "provider": "microsoft_personal",
+    "clientId": null,
+    "authority": "https://login.microsoftonline.com/consumers",
+    "redirectUri": null,
+    "initialGraphScopes": [
+      "Files.ReadWrite.AppFolder"
+    ],
+    "optionalExternalSourceScope": "Files.Read",
+    "clientSecretAllowed": false
+  },
+  "hosting": {
+    "publicAppUrl": null,
+    "publishRequiresApproval": true
+  },
+  "defaults": {
+    "workTimezone": "America/Sao_Paulo",
+    "workDays": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "dailyTargetMinutes": 480,
+    "trackingStartDate": null,
+    "sourceTimezone": null,
+    "followUpRuleStatus": "unconfirmed"
+  },
+  "storage": {
+    "provider": "onedrive_personal",
+    "protocol": "immutable_revisions_with_conditional_metadata_pointer",
+    "headFolderName": "state-head",
+    "requiresLiveProof": true,
+    "remoteSaveAcknowledgementRequired": true,
+    "offlineWritesEnabled": false
+  },
+  "sourceExcel": {
+    "driveId": null,
+    "itemId": null,
+    "mode": "read_only",
+    "consentScopeConfirmed": false
+  },
+  "font": {
+    "name": "Magnetik",
+    "licensedAssetProvided": false,
+    "useSystemFallbackUntilLicensed": true
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "version": "1.0.0",
+  "reference": "referencias/identidade_visual.jpeg",
+  "palette": {
+    "sereneBlue": "#A6BAC8",
+    "deepSlate": "#334049",
+    "mintFrost": "#D1E6D2",
+    "midnightBlack": "#1A1A1A",
+    "proWhite": "#FAFAFA"
+  },
+  "roles": {
+    "canvas": "#FAFAFA",
+    "surface": "#FAFAFA",
+    "text": "#334049",
+    "textStrong": "#1A1A1A",
+    "primaryButtonBackground": "#334049",
+    "primaryButtonText": "#FAFAFA",
+    "selectedBackground": "#A6BAC8",
+    "selectedText": "#334049",
+    "positiveBackground": "#D1E6D2",
+    "positiveText": "#334049",
+    "focusRing": "#334049"
+  },
+  "cells": {
+    "AMS": {
+      "background": "#A6BAC8",
+      "text": "#334049"
+    },
+    "SQUAD": {
+      "background": "#D1E6D2",
+      "text": "#334049"
+    },
+    "TASK_FORCE": {
+      "background": "#334049",
+      "text": "#FAFAFA"
+    },
+    "UNCLASSIFIED": {
+      "background": "#FAFAFA",
+      "text": "#334049",
+      "border": "#334049",
+      "label": "Sem classificação"
+    },
+    "GENERAL": {
+      "background": "#FAFAFA",
+      "text": "#334049",
+      "label": "Geral / transversal"
+    }
+  },
+  "font": {
+    "preferred": "Magnetik",
+    "assetProvided": false,
+    "fallback": "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "licenseRule": "Só incorporar Magnetik com arquivo e licença de uso web autorizados. Não redistribuir fontes.",
+    "weights": {
+      "heading": 500,
+      "body": 400,
+      "emphasis": 600
+    },
+    "sizesPx": {
+      "pageTitle": 32,
+      "sectionTitle": 22,
+      "body": 16,
+      "table": 14,
+      "caption": 12
+    }
+  },
+  "layout": {
+    "sidebarWidthPx": 232,
+    "desktopContentMaxPx": 1440,
+    "desktopGutterPx": 32,
+    "mobileGutterPx": 16,
+    "spacingPx": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32,
+      48
+    ],
+    "controlMinHeightPx": 44,
+    "radiusPx": {
+      "control": 8,
+      "panel": 12,
+      "chip": 6
+    },
+    "breakpointsPx": {
+      "mobileMax": 767,
+      "tabletMax": 1199,
+      "desktopMin": 1200
+    }
+  },
+  "motion": {
+    "durationMs": 140,
+    "respectReducedMotion": true
+  },
+  "contrastChecks": {
+    "deepSlateOnProWhite": 10.21,
+    "deepSlateOnSereneBlue": 5.32,
+    "deepSlateOnMintFrost": 8.1,
+    "proWhiteOnSereneBlue": 1.92,
+    "proWhiteOnMintFrost": 1.26
+  },
+  "prohibited": [
+    "Texto branco em fundos Serene Blue ou Mint Frost",
+    "Cores distintas sem rótulo para representar células ou status",
+    "Fonte extra-light em dados e controles",
+    "Dashboard como imagem estática",
+    "Logotipo extraído da referência sem autorização específica"
+  ]
+}

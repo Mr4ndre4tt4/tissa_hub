@@ -1,0 +1,156 @@
+{
+  "purpose": "Entradas sintéticas para a IA gerar testes. Não são apontamentos reais do usuário.",
+  "version": "1.0",
+  "durationTests": [
+    {
+      "raw": 0.125,
+      "unit": "excel_day_fraction",
+      "expectedMinutes": 180
+    },
+    {
+      "raw": 0.0625,
+      "unit": "excel_day_fraction",
+      "expectedMinutes": 90
+    },
+    {
+      "raw": 0.18958333333333333,
+      "unit": "excel_day_fraction",
+      "expectedMinutes": 273
+    },
+    {
+      "raw": null,
+      "unit": "excel_day_fraction",
+      "expectedState": "incomplete",
+      "expectedMinutes": null
+    },
+    {
+      "raw": "04:33",
+      "unit": "hh_mm_text",
+      "expectedMinutes": 273
+    }
+  ],
+  "dailyBalanceTests": [
+    {
+      "targetMinutes": 480,
+      "confirmedMinutes": 450,
+      "missingMinutes": 30,
+      "excessMinutes": 0
+    },
+    {
+      "targetMinutes": 480,
+      "confirmedMinutes": 495,
+      "missingMinutes": 0,
+      "excessMinutes": 15
+    },
+    {
+      "targetMinutes": 0,
+      "confirmedMinutes": 0,
+      "missingMinutes": 0,
+      "excessMinutes": 0
+    }
+  ],
+  "allocationTests": [
+    {
+      "durationMinutes": 120,
+      "references": [
+        "RR90000001",
+        "IR90000002"
+      ],
+      "allocations": [],
+      "expectedDailyMinutes": 120,
+      "expectedUnallocatedMinutes": 120
+    },
+    {
+      "durationMinutes": 120,
+      "references": [
+        "RR90000001",
+        "IR90000002"
+      ],
+      "allocations": [
+        {
+          "ref": "RR90000001",
+          "minutes": 75
+        },
+        {
+          "ref": "IR90000002",
+          "minutes": 45
+        }
+      ],
+      "expectedDailyMinutes": 120,
+      "expectedUnallocatedMinutes": 0
+    },
+    {
+      "durationMinutes": 120,
+      "references": [
+        "RR90000001",
+        "IR90000002"
+      ],
+      "allocations": [
+        {
+          "ref": "RR90000001",
+          "minutes": 75
+        },
+        {
+          "ref": "IR90000002",
+          "minutes": 60
+        }
+      ],
+      "expectedError": "allocation_sum_mismatch"
+    }
+  ],
+  "threeWayMergeTests": [
+    {
+      "base": "Original",
+      "source": "Original",
+      "app": "Minha edição",
+      "expected": "Minha edição",
+      "conflict": false
+    },
+    {
+      "base": "Original",
+      "source": "Nova versão",
+      "app": "Original",
+      "proposal": "Nova versão",
+      "conflict": false
+    },
+    {
+      "base": "Original",
+      "source": "Nova versão",
+      "app": "Minha edição",
+      "conflict": true
+    },
+    {
+      "base": "Original",
+      "source": "Igual",
+      "app": "Igual",
+      "expected": "Igual",
+      "conflict": false
+    }
+  ],
+  "sourceCellExamples": [
+    {
+      "sheet": "Apontamentos",
+      "cell": "F12",
+      "rawValue": "Em andamento",
+      "formula": "VLOOKUP(B12,Chamados!A:C,3,FALSE)",
+      "kind": "formula_cached",
+      "expectedHistoricalStatusEvent": false
+    },
+    {
+      "sheet": "Apontamentos",
+      "cell": "G12",
+      "rawValue": "LANÇADO",
+      "kind": "literal",
+      "expectedPostingState": "reported_posted",
+      "expectedVerifiedByCs3": false
+    }
+  ],
+  "revisionPointerExample": {
+    "version": 1,
+    "workspaceId": "00000000-0000-4000-8000-000000000001",
+    "revisionId": "00000000-0000-4000-8000-000000000002",
+    "itemId": "SYNTHETIC_ITEM_NOT_VALID_FOR_GRAPH",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "warning": "IDs e hash dos exemplos são sintéticos e nunca devem ser utilizados como configuração Microsoft real."
+}

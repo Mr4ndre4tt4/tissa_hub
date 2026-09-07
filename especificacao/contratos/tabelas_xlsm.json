@@ -1,0 +1,832 @@
+[
+  {
+    "file": "xl/tables/table1.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "3",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF00000000}",
+    "name": "TblChamados",
+    "displayName": "TblChamados",
+    "ref": "A3:AF494",
+    "headerRowDxfId": "139",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000001000000}",
+        "name": "Número do Chamado"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000002000000}",
+        "name": "Descrição"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000003000000}",
+        "name": "Status"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000004000000}",
+        "name": "Prioridade"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000005000000}",
+        "name": "Última Atualização",
+        "dataDxfId": "138"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000006000000}",
+        "name": "Responsável"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000007000000}",
+        "name": "Categoria"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000008000000}",
+        "name": "Data de Criação"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000009000000}",
+        "name": "Próxima Ação"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000A000000}",
+        "name": "Observações"
+      },
+      {
+        "id": "11",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000B000000}",
+        "name": "Tipo"
+      },
+      {
+        "id": "12",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000C000000}",
+        "name": "RND?"
+      },
+      {
+        "id": "13",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000D000000}",
+        "name": "Prioridade Original"
+      },
+      {
+        "id": "14",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000E000000}",
+        "name": "Dias sem atualização"
+      },
+      {
+        "id": "15",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00000F000000}",
+        "name": "Aging"
+      },
+      {
+        "id": "17",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{8CEC4B80-65C0-4A4B-B045-513CEDF6F785}",
+        "name": "Score Operacional",
+        "dataDxfId": "137"
+      },
+      {
+        "id": "16",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{9B89400C-7105-467C-AC86-03769382B4D3}",
+        "name": "Sinal de Atenção",
+        "dataDxfId": "136"
+      },
+      {
+        "id": "18",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000012000000}",
+        "name": "Cadência FU (dias)"
+      },
+      {
+        "id": "19",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000013000000}",
+        "name": "FUs p/ Encerrar"
+      },
+      {
+        "id": "20",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000014000000}",
+        "name": "FUs Realizados"
+      },
+      {
+        "id": "21",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000015000000}",
+        "name": "FUs sem resposta válidos"
+      },
+      {
+        "id": "22",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000016000000}",
+        "name": "Última resposta"
+      },
+      {
+        "id": "23",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000017000000}",
+        "name": "1º Follow-up"
+      },
+      {
+        "id": "24",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000018000000}",
+        "name": "2º Follow-up"
+      },
+      {
+        "id": "25",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000019000000}",
+        "name": "3º Follow-up"
+      },
+      {
+        "id": "26",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001A000000}",
+        "name": "Último Follow-up"
+      },
+      {
+        "id": "27",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001B000000}",
+        "name": "Próximo Follow-up"
+      },
+      {
+        "id": "28",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001C000000}",
+        "name": "Dias p/ Próximo"
+      },
+      {
+        "id": "29",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001D000000}",
+        "name": "Situação FU"
+      },
+      {
+        "id": "30",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001E000000}",
+        "name": "Ação FU Recomendada"
+      },
+      {
+        "id": "31",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-00001F000000}",
+        "name": "Pode Encerrar?"
+      },
+      {
+        "id": "32",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0000-000020000000}",
+        "name": "Status Monitor (VBA)"
+      }
+    ],
+    "sheet": "Chamados"
+  },
+  {
+    "file": "xl/tables/table3.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "8",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF05000000}",
+    "name": "ApontamentosTable",
+    "displayName": "ApontamentosTable",
+    "ref": "A3:J1021",
+    "headerRowDxfId": "208",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000001000000}",
+        "name": "Data",
+        "dataDxfId": "207"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000002000000}",
+        "name": "Número do Chamado"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000003000000}",
+        "name": "Descrição"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000004000000}",
+        "name": "Tipo de Atuação"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000005000000}",
+        "name": "Horas",
+        "dataDxfId": "206"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000006000000}",
+        "name": "Resultado/Status"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000007000000}",
+        "name": "Observações"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000008000000}",
+        "name": "Mês",
+        "dataDxfId": "205"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-000009000000}",
+        "name": "Semana"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0500-00000A000000}",
+        "name": "Ano"
+      }
+    ],
+    "sheet": "Apontamentos"
+  },
+  {
+    "file": "xl/tables/table4.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "6",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF01000000}",
+    "name": "TblToDoDiario",
+    "displayName": "TblToDoDiario",
+    "ref": "A5:I100",
+    "headerRowDxfId": "67",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000001000000}",
+        "name": "Tarefa"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000002000000}",
+        "name": "Relacionada ao chamado?"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000003000000}",
+        "name": "Nº Chamado"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000004000000}",
+        "name": "Prioridade"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000005000000}",
+        "name": "Horário"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000006000000}",
+        "name": "Status"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000007000000}",
+        "name": "Check de conclusão"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000008000000}",
+        "name": "Observações rápidas"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0100-000009000000}",
+        "name": "Data"
+      }
+    ],
+    "sheet": "To Do Diário"
+  },
+  {
+    "file": "xl/tables/table5.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "4",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF02000000}",
+    "name": "TblFollowUps",
+    "displayName": "TblFollowUps",
+    "ref": "A5:N500",
+    "headerRowDxfId": "63",
+    "dataDxfId": "62",
+    "totalsRowDxfId": "61",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000001000000}",
+        "name": "Data Follow-up",
+        "dataDxfId": "60"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000002000000}",
+        "name": "Número do Chamado",
+        "dataDxfId": "59"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000003000000}",
+        "name": "Descrição",
+        "dataDxfId": "58"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000004000000}",
+        "name": "Tipo",
+        "dataDxfId": "57"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000005000000}",
+        "name": "Tentativa #",
+        "dataDxfId": "56"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000006000000}",
+        "name": "Canal",
+        "dataDxfId": "55"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000007000000}",
+        "name": "Responsável",
+        "dataDxfId": "54"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000008000000}",
+        "name": "Resultado",
+        "dataDxfId": "53"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-000009000000}",
+        "name": "Data da Resposta",
+        "dataDxfId": "52"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-00000A000000}",
+        "name": "Próxima Ação",
+        "dataDxfId": "51"
+      },
+      {
+        "id": "11",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-00000B000000}",
+        "name": "Observação / Resumo",
+        "dataDxfId": "50"
+      },
+      {
+        "id": "12",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-00000C000000}",
+        "name": "Status no momento",
+        "dataDxfId": "49"
+      },
+      {
+        "id": "13",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-00000D000000}",
+        "name": "Próximo FU sugerido",
+        "dataDxfId": "48"
+      },
+      {
+        "id": "14",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0200-00000E000000}",
+        "name": "Encerramento recomendado?",
+        "dataDxfId": "47"
+      }
+    ],
+    "sheet": "Follow-ups"
+  },
+  {
+    "file": "xl/tables/table8.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "1",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{D7941094-3336-4808-B23B-489F4DE45895}",
+    "name": "TblMeuDesenvolvimento",
+    "displayName": "TblMeuDesenvolvimento",
+    "ref": "A7:J15",
+    "totalsRowShown": "0",
+    "headerRowDxfId": "11",
+    "dataDxfId": "10",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{508754CD-5427-48BD-9BBD-CDA6ADADBEF1}",
+        "name": "Data",
+        "dataDxfId": "9"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{6F510C9C-7DF2-4364-B086-7A00F9FF5E63}",
+        "name": "Tipo de atividade",
+        "dataDxfId": "8"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{1800E5A0-9990-4E08-B3E1-79B647D91C0F}",
+        "name": "Tema",
+        "dataDxfId": "7"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{13E7FBEB-963F-4C8B-9F19-8F808512916C}",
+        "name": "Descrição do que fiz",
+        "dataDxfId": "6"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{AD980406-81C9-404B-A3AB-40F006B59AC8}",
+        "name": "Pessoa / área impactada",
+        "dataDxfId": "5"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{FB07F660-06F5-48D9-B779-779E9470441A}",
+        "name": "Resultado / impacto",
+        "dataDxfId": "4"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{8A5555A9-5ACB-41BE-AC2F-C0968C5EEEA5}",
+        "name": "Competência demonstrada",
+        "dataDxfId": "3"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{4BEF9E74-9A8B-4B43-97DB-9793B36FF8BB}",
+        "name": "Relevância para one a one",
+        "dataDxfId": "2"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{BB9AFFFC-D9A2-49B8-9E50-4A34257ADDB1}",
+        "name": "Próximo passo",
+        "dataDxfId": "1"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{8041BBD3-FEFE-4EAE-82B5-62403FED6094}",
+        "name": "Status",
+        "dataDxfId": "0"
+      }
+    ],
+    "sheet": "Meu desenvolvimento"
+  },
+  {
+    "file": "xl/tables/table2.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "2",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{D269F1CE-CC27-4C0E-950B-773F5CB5B512}",
+    "name": "TblChamados3",
+    "displayName": "TblChamados3",
+    "ref": "A3:AF494",
+    "headerRowDxfId": "78",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{4857EF40-6B79-44BC-9FF6-46B2457754EE}",
+        "name": "Número do Chamado"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{5BCB8349-A9D4-4DBF-B6BF-92443ADB5B0F}",
+        "name": "Descrição"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{602F64FA-D773-4DDC-890C-B956BA5C5F47}",
+        "name": "Status"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{A46F94D0-CDA7-4816-BF77-2706DBD1FCC4}",
+        "name": "Prioridade"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{C4FC4614-6802-4F9C-9568-7C6D2DA83564}",
+        "name": "Última Atualização",
+        "dataDxfId": "77"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{C0F9DF4F-E886-4FEE-A7D5-CCF2F001EAB3}",
+        "name": "Responsável"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{4A49A1EE-8F18-4206-B262-934E9387F2CD}",
+        "name": "Categoria"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{07ADC5B1-FF9F-44A1-B4F2-1C91A8DFE472}",
+        "name": "Data de Criação"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{3C1A378F-512D-4BDC-B62D-D8951D5AFA6C}",
+        "name": "Próxima Ação"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{F269AFCF-9E03-4A15-B246-3A2A4FDF4EFB}",
+        "name": "Observações"
+      },
+      {
+        "id": "11",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{B43DDA88-23EC-4783-9B78-94BEF62A010D}",
+        "name": "Tipo"
+      },
+      {
+        "id": "12",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{9289B8AF-F820-4A1D-86C0-2F7AFE310261}",
+        "name": "RND?"
+      },
+      {
+        "id": "13",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{26F62E4E-DB88-493C-96F7-FB2010796630}",
+        "name": "Prioridade Original"
+      },
+      {
+        "id": "14",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{73F34DE5-E93A-4666-B291-B701AC559A57}",
+        "name": "Dias sem atualização"
+      },
+      {
+        "id": "15",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{553269DB-9D0D-4989-998E-ADFA2AC15C23}",
+        "name": "Aging"
+      },
+      {
+        "id": "17",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{3D766E91-B54F-4B43-8C23-C8F8D00C313C}",
+        "name": "Score Operacional",
+        "dataDxfId": "76"
+      },
+      {
+        "id": "16",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{557E1833-E1E8-4233-A075-1D64A3F5DEBC}",
+        "name": "Sinal de Atenção",
+        "dataDxfId": "75"
+      },
+      {
+        "id": "18",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{C69EABF5-7701-4AC7-A87C-C0BFB0B72513}",
+        "name": "Cadência FU (dias)"
+      },
+      {
+        "id": "19",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{D1F41E5B-B2A9-4008-A151-E6D611A70A49}",
+        "name": "FUs p/ Encerrar"
+      },
+      {
+        "id": "20",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{1AF71780-DD53-4480-A1D9-D3FCF3B4F16A}",
+        "name": "FUs Realizados"
+      },
+      {
+        "id": "21",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{22073E0E-B116-4F22-9881-E53EC41DAD37}",
+        "name": "FUs sem resposta válidos"
+      },
+      {
+        "id": "22",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{13F5EC50-23FD-4BE0-96AC-75B6DD921093}",
+        "name": "Última resposta"
+      },
+      {
+        "id": "23",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{846AD9CC-F30F-4F38-B37D-CFAE0873467F}",
+        "name": "1º Follow-up"
+      },
+      {
+        "id": "24",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{2380B413-5D46-4B1C-A5E2-B7B7DEA28BC0}",
+        "name": "2º Follow-up"
+      },
+      {
+        "id": "25",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{DC739B75-4E7B-4E82-9B74-50570303D6BA}",
+        "name": "3º Follow-up"
+      },
+      {
+        "id": "26",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{46C457E9-2865-41AB-8A84-1B3F355DA7D9}",
+        "name": "Último Follow-up"
+      },
+      {
+        "id": "27",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{45DEBC16-2F71-4B0A-AA15-E6204BB9E8D0}",
+        "name": "Próximo Follow-up"
+      },
+      {
+        "id": "28",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{67F5E6C5-13F4-4E7B-9A1D-227F130197E3}",
+        "name": "Dias p/ Próximo"
+      },
+      {
+        "id": "29",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{74A0505E-EA75-41F1-9856-CCD67B734CDC}",
+        "name": "Situação FU"
+      },
+      {
+        "id": "30",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{01EC8F99-5F81-47C8-A448-F1AC0BFA0729}",
+        "name": "Ação FU Recomendada"
+      },
+      {
+        "id": "31",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{35501A2F-C182-49D9-BB0F-D10DD8FEF0C2}",
+        "name": "Pode Encerrar?"
+      },
+      {
+        "id": "32",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{9E572291-7530-445F-945E-34075AD3C2BC}",
+        "name": "Status Monitor (VBA)"
+      }
+    ],
+    "sheet": "Planilha1"
+  },
+  {
+    "file": "xl/tables/table7.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "5",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF03000000}",
+    "name": "TblHistoricoStatus",
+    "displayName": "TblHistoricoStatus",
+    "ref": "A5:G316",
+    "headerRowDxfId": "21",
+    "dataDxfId": "20",
+    "totalsRowDxfId": "19",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000001000000}",
+        "name": "Data/Hora",
+        "dataDxfId": "18"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000002000000}",
+        "name": "Número do Chamado",
+        "dataDxfId": "17"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000003000000}",
+        "name": "Status Anterior",
+        "dataDxfId": "16"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000004000000}",
+        "name": "Novo Status",
+        "dataDxfId": "15"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000005000000}",
+        "name": "Usuário",
+        "dataDxfId": "14"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000006000000}",
+        "name": "Observação",
+        "dataDxfId": "13"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0300-000007000000}",
+        "name": "Origem",
+        "dataDxfId": "12"
+      }
+    ],
+    "sheet": "Histórico Status"
+  },
+  {
+    "file": "xl/tables/table6.xml",
+    "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable": "xr xr3",
+    "id": "7",
+    "{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}uid": "{00000000-000C-0000-FFFF-FFFF04000000}",
+    "name": "ResolvidosTable",
+    "displayName": "ResolvidosTable",
+    "ref": "A5:R763",
+    "headerRowDxfId": "42",
+    "dataDxfId": "41",
+    "totalsRowDxfId": "40",
+    "columns": [
+      {
+        "id": "1",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000001000000}",
+        "name": "Número do Chamado",
+        "dataDxfId": "39"
+      },
+      {
+        "id": "2",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000002000000}",
+        "name": "Descrição",
+        "dataDxfId": "38"
+      },
+      {
+        "id": "3",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000003000000}",
+        "name": "Tipo",
+        "dataDxfId": "37"
+      },
+      {
+        "id": "4",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000004000000}",
+        "name": "Categoria",
+        "dataDxfId": "36"
+      },
+      {
+        "id": "5",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000005000000}",
+        "name": "Prioridade",
+        "dataDxfId": "35"
+      },
+      {
+        "id": "6",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000006000000}",
+        "name": "Responsável",
+        "dataDxfId": "34"
+      },
+      {
+        "id": "7",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000007000000}",
+        "name": "Data de Criação",
+        "dataDxfId": "33"
+      },
+      {
+        "id": "8",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000008000000}",
+        "name": "Data Resolução",
+        "dataDxfId": "32"
+      },
+      {
+        "id": "9",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000009000000}",
+        "name": "Tempo em Aberto (dias)",
+        "dataDxfId": "31"
+      },
+      {
+        "id": "10",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000A000000}",
+        "name": "Horas Apontadas",
+        "dataDxfId": "30"
+      },
+      {
+        "id": "11",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000B000000}",
+        "name": "Qtde Apontamentos",
+        "dataDxfId": "29"
+      },
+      {
+        "id": "12",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000C000000}",
+        "name": "FUs Realizados",
+        "dataDxfId": "28"
+      },
+      {
+        "id": "13",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000D000000}",
+        "name": "Status Final",
+        "dataDxfId": "27"
+      },
+      {
+        "id": "14",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000E000000}",
+        "name": "Observações",
+        "dataDxfId": "26"
+      },
+      {
+        "id": "15",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-00000F000000}",
+        "name": "Mês",
+        "dataDxfId": "25"
+      },
+      {
+        "id": "16",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000010000000}",
+        "name": "Semana",
+        "dataDxfId": "24"
+      },
+      {
+        "id": "17",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000011000000}",
+        "name": "Ano",
+        "dataDxfId": "23"
+      },
+      {
+        "id": "18",
+        "{http://schemas.microsoft.com/office/spreadsheetml/2016/revision3}uid": "{00000000-0010-0000-0400-000012000000}",
+        "name": "Registrado em",
+        "dataDxfId": "22"
+      }
+    ],
+    "sheet": "Resolvidos"
+  }
+]

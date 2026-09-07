@@ -1,0 +1,438 @@
+{
+  "profile_id": "central-chamados-aprimorado-xlsm-v1",
+  "status": "specified_not_implemented",
+  "source_filename": "central_chamados_produtividade_aprimorado (1).xlsm",
+  "source_sha256": "7aa0e9a0399944ed575686fca1b0f44e5117ce682f127141901ae7daa5961e35",
+  "storage_target": "OneDrive personal",
+  "source_mode": "read_only",
+  "sheet_profiles": [
+    {
+      "sheet": "Chamados",
+      "table": "TblChamados",
+      "header_row_observed": 3,
+      "data_start_observed": 4,
+      "role": "primary_personal_ticket_registry",
+      "supplementary_columns_observed": "AG:AM",
+      "fields": {
+        "Número do Chamado": "reference_raw",
+        "Descrição": "personal_title",
+        "Status": "personal_status_raw",
+        "Prioridade": "personal_priority_raw",
+        "Última Atualização": "personal_updated_at_mixed_origin",
+        "Responsável": "personal_assignee",
+        "Categoria": "functional_category_raw",
+        "Data de Criação": "personal_created_at",
+        "Próxima Ação": "next_action",
+        "Observações": "personal_notes",
+        "Tipo": "type_hint",
+        "RND?": "mixed_rnd_status_notes_raw",
+        "Prioridade Original": "priority_or_complexity_source_text",
+        "Data Resolução": "personal_resolved_at"
+      },
+      "derived_columns_observed": [
+        "N:AE",
+        "AH:AM"
+      ],
+      "technical_columns_observed": [
+        "AF"
+      ]
+    },
+    {
+      "sheet": "Planilha1",
+      "table": "TblChamados3",
+      "role": "comparison_only",
+      "primary_import": false,
+      "overlapping_registry_rows": 97,
+      "status_conflicts": 14
+    },
+    {
+      "sheet": "Apontamentos",
+      "table": "ApontamentosTable",
+      "header_row_observed": 3,
+      "data_start_observed": 4,
+      "role": "effort_source",
+      "fields": {
+        "Data": "work_date",
+        "Número do Chamado": "reference_raw",
+        "Descrição": "description_or_calculated_ticket_title",
+        "Tipo de Atuação": "activity_type_raw",
+        "Horas": "duration_excel_day_fraction",
+        "Resultado/Status": "result_or_live_status_lookup",
+        "Observações": "annotation_raw"
+      },
+      "derived_columns_observed": [
+        "H",
+        "I",
+        "J"
+      ],
+      "duration_conversion": {
+        "input_numeric_unit": "fraction_of_day",
+        "output_unit": "minute",
+        "multiplier": 1440,
+        "rounding_policy": "floating_point_noise_only_preserve_actual_minutes"
+      },
+      "missing_duration_policy": "incomplete_no_automatic_hours",
+      "without_ticket_policy": "preserve_activity_review_link"
+    },
+    {
+      "sheet": "Follow-ups",
+      "table": "TblFollowUps",
+      "header_row_observed": 5,
+      "role": "followup_events",
+      "creates_time_entries": false,
+      "live_lookup_columns": [
+        "C",
+        "D",
+        "L"
+      ],
+      "candidate_derived_columns": [
+        "E",
+        "M",
+        "N"
+      ],
+      "missing_result": "unknown_not_no_response"
+    },
+    {
+      "sheet": "To Do Diário",
+      "table": "TblToDoDiario",
+      "header_row_observed": 5,
+      "role": "tasks",
+      "creates_time_entries": false
+    },
+    {
+      "sheet": "Histórico Status",
+      "table": "TblHistoricoStatus",
+      "header_row_observed": 5,
+      "role": "personal_status_history_not_cs3"
+    },
+    {
+      "sheet": "Resolvidos",
+      "table": "ResolvidosTable",
+      "header_row_observed": 5,
+      "role": "personal_resolution_snapshot",
+      "effort_is_derived": true,
+      "never_sum_with_time_entries": true,
+      "missing_resolution_date": "unknown_do_not_generate_now"
+    },
+    {
+      "sheet": "Meu desenvolvimento",
+      "table": "TblMeuDesenvolvimento",
+      "header_row_observed": 7,
+      "role": "development_notes",
+      "creates_time_entries": false
+    },
+    {
+      "sheet": "Fila Follow-up",
+      "role": "derived_view",
+      "primary_import": false
+    },
+    {
+      "sheet": "Dashboard",
+      "role": "derived_view",
+      "primary_import": false
+    },
+    {
+      "sheet": "Produtividade",
+      "role": "derived_view",
+      "primary_import": false
+    },
+    {
+      "sheet": "Listas",
+      "role": "configuration_candidates"
+    },
+    {
+      "sheet": "Instruções",
+      "role": "documentation_not_authoritative_over_data"
+    }
+  ],
+  "identity": {
+    "keep_original": true,
+    "trim_outer_whitespace_and_nbsp": true,
+    "uppercase_id_comparison": true,
+    "multiple_cs3_ids": "one_activity_multiple_candidate_links_no_automatic_split_or_full_credit_per_ticket",
+    "external_references": "separate_namespaces_no_automatic_entity_merge",
+    "missing_master_ticket": "provisional_reference_no_drop",
+    "source_row_number": "provenance_only_not_stable_primary_key"
+  },
+  "source_precedence": {
+    "cs3_csv": "official_fields_only",
+    "xlsm": "personal_and_historical_fields_only",
+    "application": "retain_manual_edits",
+    "current_lookup_formula": "not_historical_fact",
+    "reimport": "three_way_reconciliation_with_last_imported_state",
+    "absence": "never_delete",
+    "identical_file": "no_new_events",
+    "duplicate_looking_events": "review_do_not_automatically_delete"
+  },
+  "cells": {
+    "teams": [
+      "AMS",
+      "Squad de melhoria",
+      "Task Force"
+    ],
+    "historical_assignment": "unknown_until_confirmed",
+    "category_is_not_team": true,
+    "timesheet_cell_snapshot": true
+  },
+  "safety": {
+    "run_vba": false,
+    "follow_external_links": false,
+    "write_source_workbook": false,
+    "trust_cached_dashboards": false,
+    "store_source_provenance": true,
+    "official_posted_state_from_LANCADO": false
+  },
+  "quality_gates": [
+    "multiticket_allocations",
+    "candidate_duplicates",
+    "unknown_followup_threshold_IR",
+    "invalid_dates",
+    "computed_field_errors",
+    "missing_duration",
+    "missing_master_reference",
+    "resolution_snapshot_conflict"
+  ],
+  "observed_baseline": {
+    "source_filename": "central_chamados_produtividade_aprimorado (1).xlsm",
+    "sha256": "7aa0e9a0399944ed575686fca1b0f44e5117ce682f127141901ae7daa5961e35",
+    "as_of": "2026-09-07",
+    "method": "Leitura estática do OOXML e fonte VBA; valores salvos sem executar macros, resolver links externos ou modificar o arquivo.",
+    "sheets": 13,
+    "source_rows": {
+      "Chamados": 106,
+      "Planilha1": 97,
+      "Apontamentos": 323,
+      "Resolvidos": 70,
+      "Follow-ups": 22,
+      "Histórico Status": 16,
+      "To Do Diário": 5,
+      "Meu desenvolvimento": 8,
+      "Fila Follow-up": 20
+    },
+    "input_rows_with_material_content": 333,
+    "numeric_duration_rows": 281,
+    "numeric_duration_minutes_gross": 33693,
+    "gross_hours_label": "561h33; soma antes de conciliação e aprovação; não é total homologado nem horas publicadas no CS3",
+    "rows_with_id_without_duration": 45,
+    "rows_with_duration_without_id": [
+      155,
+      176,
+      194
+    ],
+    "numeric_duration_period": [
+      "2026-05-18",
+      "2026-08-31"
+    ],
+    "date_range_in_input_rows": [
+      "2026-05-18",
+      "2026-09-04"
+    ],
+    "calendar_days_with_numeric_duration": 72,
+    "daily_totals_compared_to_480_on_observed_dates": {
+      "equal": 50,
+      "below": 13,
+      "above": 9
+    },
+    "personal_status_distribution": {
+      "Aguardando terceiros": 3,
+      "Resolvido": 81,
+      "Aguardando usuário": 7,
+      "Em andamento": 5,
+      "Transferido": 7,
+      "Em andamento ABAP": 1,
+      "": 2
+    },
+    "planilha1_overlap": 97,
+    "planilha1_status_conflicts": 14,
+    "time_duplicate_candidates": [
+      [
+        263,
+        267
+      ],
+      [
+        264,
+        268
+      ],
+      [
+        265,
+        269
+      ],
+      [
+        266,
+        270
+      ]
+    ],
+    "formula_errors_cached": [
+      {
+        "sheet": "Chamados",
+        "cell": "AA101",
+        "error": "#VALUE!",
+        "formula": "IF($B101=\"\",\"\",IF(OR($C101=\"Resolvido\",$C101=\"Encerrado\"),\"\",IF($U101>=$S101,\"\",IF($Z101=\"\",INT(IF($E101=\"\",$H101,$E101))+$R101,INT($Z101)+$R101))))"
+      },
+      {
+        "sheet": "Chamados",
+        "cell": "AB101",
+        "error": "#VALUE!",
+        "formula": "IF($B101=\"\",\"\",IF($AA101=\"\",\"\",$AA101-TODAY()))"
+      },
+      {
+        "sheet": "Chamados",
+        "cell": "AC101",
+        "error": "#VALUE!",
+        "formula": "IF($B101=\"\",\"\",IF(OR($C101=\"Resolvido\",$C101=\"Encerrado\"),\"Encerrado/Resolvido\",IF($U101>=$S101,\"Follow-ups completos\",IF($AB101<0,\"Vencido\",IF($AB101=0,\"Vence hoje\",\"Dentro do prazo\")))))"
+      },
+      {
+        "sheet": "Chamados",
+        "cell": "AD101",
+        "error": "#VALUE!",
+        "formula": "IF($B101=\"\",\"\",IF(OR($C101=\"Resolvido\",$C101=\"Encerrado\"),\"Sem ação\",IF($U101>=$S101,\"Sem resposta após \"&$U101&\" follow-up(s). Avaliar encerramento/escalonamento.\",IF($AC101=\"Vencido\",\"Enviar follow-up \"&($U101+1)&\" hoje\",IF($AC101=\"Vence hoje\",\"Enviar follow-up \"&($U101+1)&\" até o fim do dia\",\"Aguardar até \"&TEXT($AA101,\"dd/mm/yyyy\"))))))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "H285",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",TEXT(#REF!,\"mmm/yyyy\"))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "I285",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",WEEKNUM(#REF!,2))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "J285",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",YEAR(#REF!))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "H286",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",TEXT(#REF!,\"mmm/yyyy\"))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "I286",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",WEEKNUM(#REF!,2))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "J286",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",YEAR(#REF!))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "H289",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",TEXT(#REF!,\"mmm/yyyy\"))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "I289",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",WEEKNUM(#REF!,2))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "J289",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",YEAR(#REF!))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "H312",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",TEXT(#REF!,\"mmm/yyyy\"))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "I312",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",WEEKNUM(#REF!,2))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "J312",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",YEAR(#REF!))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "H316",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",TEXT(#REF!,\"mmm/yyyy\"))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "I316",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",WEEKNUM(#REF!,2))"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "J316",
+        "error": "#REF!",
+        "formula": "IF(#REF!=\"\",\"\",YEAR(#REF!))"
+      }
+    ],
+    "external_formula_cells": [
+      {
+        "sheet": "Apontamentos",
+        "cell": "C267"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "F267"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "C268"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "F268"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "C269"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "F269"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "C270"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "F270"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "C271"
+      },
+      {
+        "sheet": "Apontamentos",
+        "cell": "F271"
+      }
+    ],
+    "macros_static_modules_extracted": 18,
+    "cell_references": {
+      "hours_example": "Apontamentos!E4=0.125 ->180 min",
+      "resolved_status": "Chamados!C4:C109=81; Resolvidos!A6:A763=70",
+      "main_table": "Chamados!A3:AF494; supplementary fields AG3:AM494",
+      "trim_status": "Chamados!C58,C59,C65,C69,C73,C81,C88=Transferido[espaço]; Produtividade!L5=0"
+    }
+  },
+  "spec_precedence": "ESPECIFICACAO_FINAL_PARA_IA.md v4.0",
+  "count_definitions": {
+    "observed_baseline.source_rows.Apontamentos": "323 linhas com referência preenchida em B; não total de linhas operacionais",
+    "input_rows_with_material_content": "333 linhas operacionais pelo critério literal B/C/D/E/G",
+    "numeric_duration_rows": "281 linhas com duração numérica; total bruto não homologado"
+  },
+  "baseline_not_migration_approval": true
+}

@@ -1,0 +1,101 @@
+{
+  "specVersion": "4.0",
+  "scope": "Hashes dos arquivos entregues; o manifesto não inclui a si próprio. Não é assinatura digital.",
+  "files": [
+    {
+      "path": ".gitignore.recomendado",
+      "size_bytes": 246,
+      "sha256": "0ede7a20714e723f158f2d5263c651d8817cd76ac6674a6f28ed3628880c49b3"
+    },
+    {
+      "path": "CHECKLIST_DE_ACEITE.md",
+      "size_bytes": 27561,
+      "sha256": "683e7a77731665d4d12fac9f394e56ede6cd5e1017172a34831153e685f09a7e"
+    },
+    {
+      "path": "COMECE_AQUI.md",
+      "size_bytes": 2779,
+      "sha256": "6edb0472fdc22b39e382897f20f0a912cc90f3e9b425fcf98edd83f6359b59ce"
+    },
+    {
+      "path": "ESPECIFICACAO_FINAL_PARA_IA.md",
+      "size_bytes": 83707,
+      "sha256": "8b14cf7ec71818633e767f186fdca2cb809b79e6a82997ab8383a0afbafb229a"
+    },
+    {
+      "path": "contratos/baseline_xlsm.json",
+      "size_bytes": 6197,
+      "sha256": "f3fe22c87c4ff26d68ce12b7ddb994a5e3c23d7f746e4b4f8f022e7e74aa6de8"
+    },
+    {
+      "path": "contratos/configuracao_publica.exemplo.json",
+      "size_bytes": 1379,
+      "sha256": "54346668d0bf99369f29db557bbfe317272f3d71d82b8d2075b95b8fd38717ac"
+    },
+    {
+      "path": "contratos/criterios_aceite.json",
+      "size_bytes": 27111,
+      "sha256": "5549ecd3f1564620e5b099d1c2bda920cd049deb933205e31d6aa0d646c1f092"
+    },
+    {
+      "path": "contratos/design_tokens.json",
+      "size_bytes": 2627,
+      "sha256": "b77fc47314ac19052b83d92a31e5e5814c25deb2334b8d0dd6c0c27b95356b51"
+    },
+    {
+      "path": "contratos/fixtures_sinteticas.json",
+      "size_bytes": 3546,
+      "sha256": "3f43c0f7f039048cc6165284622326357b8f059454b8af9cbe55a47acc263fb7"
+    },
+    {
+      "path": "contratos/manifesto_fontes.json",
+      "size_bytes": 1185,
+      "sha256": "312e5ef79b2577e524a7b500c9dd73a51e3d622f99918040f604e9347e42443e"
+    },
+    {
+      "path": "contratos/perfil_xlsm.json",
+      "size_bytes": 13054,
+      "sha256": "633591b30c2e86af17b601f719b6e5e832c3b4888d279264a9ad7aa9b0de4d82"
+    },
+    {
+      "path": "contratos/tabelas_xlsm.json",
+      "size_bytes": 30612,
+      "sha256": "58776b40d4a2ac91b4f4573ee66ec9cd50b3071956681d95ba82554c7da186c6"
+    },
+    {
+      "path": "insumos_privados/central_chamados_produtividade_aprimorado (1).xlsm",
+      "size_bytes": 776959,
+      "sha256": "7aa0e9a0399944ed575686fca1b0f44e5117ce682f127141901ae7daa5961e35"
+    },
+    {
+      "path": "insumos_privados/export 2.csv",
+      "size_bytes": 5697,
+      "sha256": "c734299eb47b9b6e066f4c8c629ad22a18ca7fbbb7cdc9accc69a414c0064d3f"
+    },
+    {
+      "path": "insumos_privados/export.csv",
+      "size_bytes": 1674,
+      "sha256": "382ef4e1c171c5fed1fa9cc3f56d62e683051214bdc57326e94505dc49a9fed4"
+    },
+    {
+      "path": "referencias/identidade_visual.jpeg",
+      "size_bytes": 163145,
+      "sha256": "ef9058726664635d2304c142ca1c20bc262e4ab0e20efd66f55b9fb4492a8e85"
+    },
+    {
+      "path": "referencias/interpretacao_da_planilha.md",
+      "size_bytes": 21811,
+      "sha256": "95606c3be320dd8da643a245995de4070308b0474296e1be41d4db438df2bc49"
+    },
+    {
+      "path": "verificacao/LEIA-ME.md",
+      "size_bytes": 564,
+      "sha256": "3773dc02e83825ef5369c7a6976dbbc343c9475ccacb106b92ea8edaae785374"
+    },
+    {
+      "path": "verificacao/VALIDACAO_DO_PACOTE.json",
+      "size_bytes": 23316,
+      "sha256": "c27f6bb9548aba367f3984f7554d1fd3eb452f955cacf3093d6d6a8d14784557"
+    }
+  ]
+}

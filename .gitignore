@@ -1,0 +1,22 @@
+# Insumos privados do cliente — nunca versionar, nunca publicar, nunca entrar no build.
+insumos_privados/
+**/*.xlsm
+**/*.xlsx
+private-fixtures/
+exports/
+recovery/
+
+# Configuração real (client ID, redirect URI, URL publicada).
+.env
+.env.*
+!.env.example
+
+# Dependências e build
+node_modules/
+dist/
+coverage/
+
+# Logs e resultados de teste — revisar antes de publicar.
+*.log
+playwright/.auth/
+test-results/

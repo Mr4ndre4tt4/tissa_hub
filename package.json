@@ -1,0 +1,32 @@
+{
+  "name": "central-de-chamados",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "description": "Central de Chamados — controle pessoal de chamados e esforço, com dados no OneDrive pessoal.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false --pretty",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "baseline": "tsx scripts/verificar-baseline.ts"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "3.28.1",
+    "fflate": "0.8.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
+  }
+}

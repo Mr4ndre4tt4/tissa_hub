@@ -1,0 +1,746 @@
+{
+  "spec_version": "4.0",
+  "notice": "Critérios de teste, não resultados. Aplicativo não implementado nesta entrega.",
+  "cases": [
+    {
+      "id": "AC-001",
+      "category": "DADOS",
+      "title": "CSV inicial",
+      "precondition": "Base vazia; os dois CSVs reais",
+      "action": "Importar e confirmar ambos",
+      "expected": "16 identidades oficiais: 3 IR e 13 RR; nenhuma hora criada.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-002",
+      "category": "DADOS",
+      "title": "CSV repetido",
+      "precondition": "CSV inicial já aplicado",
+      "action": "Reimportar os mesmos arquivos",
+      "expected": "Mesmos 16 tickets; zero duplicação de notas, horas ou eventos fictícios.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-003",
+      "category": "DADOS",
+      "title": "CSV oficial novo",
+      "precondition": "Ticket com nota, horas e célula manual",
+      "action": "Importar status/título mais recentes",
+      "expected": "Somente campos oficiais mudam; registros pessoais permanecem.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-004",
+      "category": "DADOS",
+      "title": "Versão antiga",
+      "precondition": "Ticket oficial em versão recente",
+      "action": "Importar versão anterior",
+      "expected": "Não regredir; registrar a decisão por linha.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-005",
+      "category": "DADOS",
+      "title": "Empate divergente",
+      "precondition": "Mesmo ID e mesmo Last Update Time",
+      "action": "Alterar o conteúdo da linha",
+      "expected": "Conflito explícito; nenhuma decisão pela ordem do upload.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-006",
+      "category": "DADOS",
+      "title": "Ausente na carga",
+      "precondition": "Ticket com horas previamente cadastrado",
+      "action": "Enviar CSV parcial sem o ticket",
+      "expected": "Preservar ticket, horas e status; não encerrar por ausência.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-007",
+      "category": "DADOS",
+      "title": "Vazios e ausentes",
+      "precondition": "Campo opcional com valor salvo",
+      "action": "Comparar coluna ausente e campo presente vazio",
+      "expected": "Ausente preserva; limpeza opcional requer prévia e decisão.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-008",
+      "category": "DADOS",
+      "title": "CSV real",
+      "precondition": "Campos com acentos, BOM, ponto e vírgula, aspas e quebra interna",
+      "action": "Ler em colunas reordenadas",
+      "expected": "Manter valores corretos; não dividir o conteúdo da descrição.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-009",
+      "category": "DADOS",
+      "title": "Formato incompatível",
+      "precondition": "Cabeçalho obrigatório ausente ou repetido",
+      "action": "Tentar importar",
+      "expected": "Bloquear o perfil; não inferir outra origem pelo título.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-010",
+      "category": "DADOS",
+      "title": "IR/RR e namespaces",
+      "precondition": "RR cujo título contém Incidente; alias INC/RITM",
+      "action": "Importar",
+      "expected": "Tipo vem do esquema; aliases não viram tickets CS3 adicionais.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-011",
+      "category": "XLSM",
+      "title": "Arquivo de referência",
+      "precondition": "XLSM com SHA-256 indicado",
+      "action": "Inspecionar em somente leitura",
+      "expected": "13 abas; hash do original inalterado; zero macro/link executado.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-012",
+      "category": "XLSM",
+      "title": "Cadastro e cópia",
+      "precondition": "Chamados e Planilha1 presentes",
+      "action": "Interpretar as duas abas",
+      "expected": "106 linhas principais; 97 da cópia não acrescentadas; 14 divergências sinalizadas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-013",
+      "category": "XLSM",
+      "title": "Campos fora da tabela",
+      "precondition": "TblChamados termina em AF",
+      "action": "Interpretar AG:AM",
+      "expected": "Capturar data de resolução pessoal e reconhecer totais derivados.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-014",
+      "category": "XLSM",
+      "title": "Linhas distantes",
+      "precondition": "Resolvidos e Histórico Status com intervalos vazios",
+      "action": "Percorrer conteúdo material",
+      "expected": "Preservar 70 resoluções e 16 eventos da versão de referência.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-015",
+      "category": "XLSM",
+      "title": "Linhas operacionais",
+      "precondition": "Apontamentos contém linhas com apenas data/fórmula",
+      "action": "Interpretar conteúdo",
+      "expected": "333 operacionais, 281 com duração, 52 sem; 323 com referência é outro denominador.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-016",
+      "category": "HORAS",
+      "title": "Conversão 3h",
+      "precondition": "Valor Excel 0.125 em Horas",
+      "action": "Converter pelo perfil",
+      "expected": "180 minutos, não 0.125 hora.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-017",
+      "category": "HORAS",
+      "title": "Precisão 4h33",
+      "precondition": "Valor Excel 0.18958333333333333",
+      "action": "Converter pelo perfil",
+      "expected": "273 minutos; não arredondar para 270.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-018",
+      "category": "HORAS",
+      "title": "Conferência bruta",
+      "precondition": "281 durações da versão de referência",
+      "action": "Somar para prévia",
+      "expected": "33.693 minutos/561h33 brutas; não rotular como homologadas ou enviadas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-019",
+      "category": "HORAS",
+      "title": "Duração ausente",
+      "precondition": "52 linhas operacionais sem Horas",
+      "action": "Importar candidatos",
+      "expected": "Preservar incompletos; excluir dos confirmados; não preencher 8h ou 0 de trabalho.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-020",
+      "category": "HORAS",
+      "title": "Data/calendário",
+      "precondition": "Serial Excel e sistema 1900/1904",
+      "action": "Converter",
+      "expected": "Data civil correta; serial fictício 60 não vira evento válido; sem deslocamento por UTC.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-021",
+      "category": "HORAS",
+      "title": "Meta 7h30",
+      "precondition": "Meta 480; confirmados 450",
+      "action": "Calcular Meu dia",
+      "expected": "Realizado 7h30; faltam 30 min; excedente zero.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-022",
+      "category": "HORAS",
+      "title": "Meta 8h15",
+      "precondition": "Meta 480; confirmados 495",
+      "action": "Calcular Meu dia",
+      "expected": "Excedente 15 min; não truncar a duração nem transferir saldo.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-023",
+      "category": "HORAS",
+      "title": "Exceção de jornada",
+      "precondition": "Férias com meta zero; dia parcial com meta 240",
+      "action": "Calcular pendências",
+      "expected": "Férias não geram falta; parcial usa 240; dias futuros não são atraso.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-024",
+      "category": "HORAS",
+      "title": "Compartilhamento",
+      "precondition": "Uma atividade 120 min, dois tickets",
+      "action": "Confirmar sem rateio",
+      "expected": "120 no dia; nenhum ticket recebe 120 integral; 120 em compartilhadas sem rateio.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-025",
+      "category": "HORAS",
+      "title": "Rateio confirmado",
+      "precondition": "Atividade de 120 min",
+      "action": "Alocar 75 e 45",
+      "expected": "Total diário 120; tickets 75/45; sobra zero; 75+60 é rejeitado.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-026",
+      "category": "HORAS",
+      "title": "Horas sem cadastro",
+      "precondition": "Referência desconhecida com duração válida",
+      "action": "Confirmar após revisão",
+      "expected": "Preservar esforço e referência provisória; CSV posterior completa sem duplicar.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-027",
+      "category": "HORAS",
+      "title": "Sem ID literal",
+      "precondition": "Linhas 155,176,194 do XLSM",
+      "action": "Interpretar",
+      "expected": "Preservar horas internas; sugerir os vínculos de C194 sem escolher arbitrariamente.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-028",
+      "category": "HORAS",
+      "title": "Dupla soma",
+      "precondition": "Detalhes em Apontamentos e totais em Chamados/Resolvidos",
+      "action": "Gerar dashboard",
+      "expected": "Somar apenas esforço detalhado; não adicionar totais ou saldos duplicados.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-029",
+      "category": "HORAS",
+      "title": "Estado LANÇADO",
+      "precondition": "Observação legada LANÇADO",
+      "action": "Importar",
+      "expected": "Reported posted pessoal; nunca confirmação técnica de integração.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-030",
+      "category": "HORAS",
+      "title": "Cancelamento",
+      "precondition": "Apontamento confirmado",
+      "action": "Cancelar com confirmação",
+      "expected": "Sai do total; mantém registro e auditoria; não some da história.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-031",
+      "category": "IDENTIDADE",
+      "title": "Duas referências na linha",
+      "precondition": "Chamados!A4 com dois RR",
+      "action": "Interpretar",
+      "expected": "Preservar grupo pessoal e dois candidatos; não fundir tickets oficiais.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-032",
+      "category": "IDENTIDADE",
+      "title": "Referência composta",
+      "precondition": "IR+INC; CR+RR; SCTASK",
+      "action": "Interpretar",
+      "expected": "Namespaces distintos, relações explícitas e sem ticket fictício.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-033",
+      "category": "IDENTIDADE",
+      "title": "Espaços e caixa",
+      "precondition": "Mesmo ID com espaços/NBSP/caixa diferente",
+      "action": "Conciliar",
+      "expected": "Mesma identidade normalizada; preservar bruto; não depender de título.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-034",
+      "category": "IMPORTACAO",
+      "title": "Reordenação de linhas",
+      "precondition": "XLSM já confirmado",
+      "action": "Reordenar linhas sem mudar os fatos",
+      "expected": "Nenhuma nova hora; IDs internos e multiplicidade mantidos.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-035",
+      "category": "IMPORTACAO",
+      "title": "Candidatos repetidos",
+      "precondition": "Pares 263/267,264/268,265/269,266/270",
+      "action": "Gerar prévia",
+      "expected": "Quatro pendências; não excluir nem homologar automaticamente.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-036",
+      "category": "IMPORTACAO",
+      "title": "Correção de duração",
+      "precondition": "Evento legado vinculado; duração alterada no Excel",
+      "action": "Reimportar",
+      "expected": "Propor correção antes/depois, não criar outro esforço silencioso.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-037",
+      "category": "IMPORTACAO",
+      "title": "Três estados",
+      "precondition": "Base importada B; aplicativo A alterado; planilha S também",
+      "action": "Conciliar",
+      "expected": "Manter mudança local quando S=B; conflito quando A e S divergem de B.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-038",
+      "category": "IMPORTACAO",
+      "title": "Mudança durante prévia",
+      "precondition": "Prévia baseada em revisão R",
+      "action": "Outra sessão altera R antes do confirmar",
+      "expected": "Invalidar/recalcular prévia; não sobrescrever.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-039",
+      "category": "IMPORTACAO",
+      "title": "Cópia renomeada",
+      "precondition": "Arquivo conhecido salvo com novo nome",
+      "action": "Selecionar fonte",
+      "expected": "Propor associação à fonte existente; não duplicar base pela mudança de nome.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-040",
+      "category": "FORMULAS",
+      "title": "Erro auxiliar",
+      "precondition": "A286 e E286 válidos; H:J com #REF!",
+      "action": "Importar",
+      "expected": "Manter data e 270 min; recalcular agrupamentos.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-041",
+      "category": "FORMULAS",
+      "title": "Fórmula de status",
+      "precondition": "F aponta ao cadastro atual",
+      "action": "Interpretar",
+      "expected": "Guardar como consulta calculada; não criar status histórico naquela data.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-042",
+      "category": "FORMULAS",
+      "title": "Link externo",
+      "precondition": "Dez fórmulas em C/F 267:271",
+      "action": "Ler workbook",
+      "expected": "Nenhum acesso externo; valor salvo/proveniência e pendência quando necessário.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-043",
+      "category": "ESTADOS",
+      "title": "Resoluções divergentes",
+      "precondition": "81 Resolvido; 70 em Resolvidos",
+      "action": "Conciliar",
+      "expected": "11 casos sem registro correspondente, sem data fabricada.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-044",
+      "category": "ESTADOS",
+      "title": "Transferidos",
+      "precondition": "Sete estados Transferido com espaço final",
+      "action": "Recalcular indicador",
+      "expected": "Sete normalizados, não zero por confiar no cache.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-045",
+      "category": "ESTADOS",
+      "title": "Datas incoerentes",
+      "precondition": "Criação posterior à resolução ou datas-base ausentes",
+      "action": "Calcular prazo",
+      "expected": "Não calcular atraso desde 1900 nem intervalo negativo; sinalizar exclusão do indicador.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-046",
+      "category": "CELULAS",
+      "title": "Precedência manual",
+      "precondition": "Célula escolhida pelo usuário",
+      "action": "Importar tag diferente",
+      "expected": "Manter manual; atualizar sugestão e mostrar divergência.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-047",
+      "category": "CELULAS",
+      "title": "Histórico",
+      "precondition": "Ticket muda de AMS para Squad",
+      "action": "Consultar horas antigas e apontar novas",
+      "expected": "Antigas continuam AMS; novas sugerem Squad; desconhecidas não são retroclassificadas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-048",
+      "category": "CELULAS",
+      "title": "EXTRABASELINE",
+      "precondition": "Tag contém EXTRABASELINE",
+      "action": "Classificar",
+      "expected": "Revisão manual; não AMS por conter BASELINE.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-049",
+      "category": "CELULAS",
+      "title": "Reconciliação de totais",
+      "precondition": "Horas com AMS/Squad/Task Force/Geral/sem célula",
+      "action": "Agregar",
+      "expected": "Soma das cinco classes igual ao total confirmado, sem dupla contagem.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-050",
+      "category": "PLANEJAMENTO",
+      "title": "Sem esforço automático",
+      "precondition": "Tarefa concluída, follow-up, desenvolvimento",
+      "action": "Salvar",
+      "expected": "Nenhum apontamento criado; ação de apontar exige duração e confirmação.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-051",
+      "category": "PLANEJAMENTO",
+      "title": "Regra IR divergente",
+      "precondition": "Instrução indica 3 tentativas; cálculo indica 2",
+      "action": "Importar configurações",
+      "expected": "Regra não confirmada; sem encerramento automático; data manual permitida.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-052",
+      "category": "PLANEJAMENTO",
+      "title": "Resultado desconhecido",
+      "precondition": "Follow-up sem Resultado ou resposta sem data",
+      "action": "Interpretar",
+      "expected": "Não contar ausência como Sem resposta; preservar pendência.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-053",
+      "category": "DESENVOLVIMENTO",
+      "title": "Conteúdo incompleto",
+      "precondition": "8 registros com descrição, 7 com data",
+      "action": "Importar",
+      "expected": "Preservar os 8; um em sem data; sem gerar horas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-054",
+      "category": "SEGURANCA",
+      "title": "Conta pessoal",
+      "precondition": "Conta Microsoft pessoal autorizada",
+      "action": "Entrar, ler e gravar",
+      "expected": "Fluxo real funciona sem depender de conta corporativa/workbook session.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-055",
+      "category": "SEGURANCA",
+      "title": "Menor permissão",
+      "precondition": "Somente AppFolder aprovado",
+      "action": "Criar e testar revisão/ponteiro",
+      "expected": "Operações comprovadas nesse escopo ou bloqueio documentado; sem expansão silenciosa.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-056",
+      "category": "SEGURANCA",
+      "title": "Fonte fora da pasta",
+      "precondition": "Planilha fora de AppFolder",
+      "action": "Vincular sem consentimento adicional",
+      "expected": "Não ler; explicar alternativas e alcance real de Files.Read.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-057",
+      "category": "SEGURANCA",
+      "title": "Troca de conta",
+      "precondition": "Base da conta A na memória",
+      "action": "Sair e entrar na conta B",
+      "expected": "Nenhum dado de A apresentado ou enviado para B.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-058",
+      "category": "SEGURANCA",
+      "title": "Conteúdo perigoso",
+      "precondition": "Texto HTML/script e fórmula na exportação",
+      "action": "Exibir/exportar",
+      "expected": "Texto escapado; nenhuma execução; célula de exportação tratada como texto.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-059",
+      "category": "SEGURANCA",
+      "title": "Privacidade do build",
+      "precondition": "Insumos privados no ambiente de desenvolvimento",
+      "action": "Gerar build e inspecionar artefatos",
+      "expected": "Nenhum CSV/XLSM/token/registro real no público, bundle ou logs.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-060",
+      "category": "SEGURANCA",
+      "title": "ZIP/arquivo inválido",
+      "precondition": "Arquivo expandido além dos limites ou path malicioso",
+      "action": "Ler",
+      "expected": "Interromper com erro compreensível, sem gravar base parcial.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-061",
+      "category": "ONEDRIVE",
+      "title": "Duas sessões",
+      "precondition": "Ambas leem o mesmo head eTag",
+      "action": "Publicar em paralelo, repetir 100 vezes",
+      "expected": "Um vencedor por base; perdedor recebe conflito; após conciliação ambas operações preservadas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-062",
+      "category": "ONEDRIVE",
+      "title": "Falha no upload",
+      "precondition": "Nova revisão ainda não publicada",
+      "action": "Interromper upload",
+      "expected": "Revisão anterior continua ativa; nenhuma carga parcial no dashboard.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-063",
+      "category": "ONEDRIVE",
+      "title": "Resposta perdida",
+      "precondition": "Commit pode ter ocorrido, mas resposta é perdida",
+      "action": "Retentar com mesmo operationId",
+      "expected": "Consultar recibo/ancestralidade; não duplicar; informar incerto quando não confirmar.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-064",
+      "category": "ONEDRIVE",
+      "title": "Inicialização concorrente",
+      "precondition": "Duas sessões, base ainda inexistente",
+      "action": "Inicializar juntas",
+      "expected": "Uma identidade de base; sem state-head renomeado e sem bases paralelas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-065",
+      "category": "ONEDRIVE",
+      "title": "Arquivo alterado/excluído",
+      "precondition": "Hash inválido, head faltante ou revisão removida",
+      "action": "Abrir aplicação",
+      "expected": "Entrar em recuperação; não recriar base vazia silenciosamente.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-066",
+      "category": "ONEDRIVE",
+      "title": "Quota e throttling",
+      "precondition": "Respostas de cota,429,5xx",
+      "action": "Salvar",
+      "expected": "Erro/espera limitada; manter formulário; não declarar salvo.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-067",
+      "category": "ONEDRIVE",
+      "title": "Restauração",
+      "precondition": "Checkpoint validado e revisão atual",
+      "action": "Restaurar com prévia e confirmação",
+      "expected": "Nova revisão consistente; anterior preservada; totais conferidos.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-068",
+      "category": "ONEDRIVE",
+      "title": "Fonte durante download",
+      "precondition": "XLSM muda entre metadados antes/depois",
+      "action": "Vincular/ler",
+      "expected": "Detectar mudança; repetir de modo limitado; não confirmar versão ambígua.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-069",
+      "category": "UI",
+      "title": "Paleta",
+      "precondition": "Referência e design tokens",
+      "action": "Revisar telas",
+      "expected": "HEX base corretos; texto escuro em azul/menta; sem paleta alternativa arbitrária.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-070",
+      "category": "UI",
+      "title": "Fonte",
+      "precondition": "Magnetik não fornecida",
+      "action": "Abrir aplicação",
+      "expected": "Fallback declarado; não afirmar uso da fonte nem incluí-la sem licença.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-071",
+      "category": "UI",
+      "title": "Navegação acessível",
+      "precondition": "Desktop e 390 px; teclado/zoom200%",
+      "action": "Percorrer login, dia, importação e detalhe",
+      "expected": "Sem conteúdo crítico cortado; foco e rótulos funcionam; gráficos têm alternativa.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-072",
+      "category": "UI",
+      "title": "Sem rede e vazio",
+      "precondition": "Sem rede, sem permissão, filtro vazio",
+      "action": "Abrir respectivas telas",
+      "expected": "Estados diferentes e mensagens específicas; não confundir com zero de trabalho.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-073",
+      "category": "ENTREGA",
+      "title": "Conexão e publicação",
+      "precondition": "Código implementado e autorização disponível",
+      "action": "Publicar e testar URL HTTPS real",
+      "expected": "Só declarar integrado após confirmar login, gravação e leitura noutra sessão.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    },
+    {
+      "id": "AC-074",
+      "category": "ENTREGA",
+      "title": "Original preservado",
+      "precondition": "Hashes dos três insumos antes da execução",
+      "action": "Executar leitura e conferência",
+      "expected": "Hashes finais iguais; fontes reais não reescritas.",
+      "application_test_status": "not_executed",
+      "evidence": null
+    }
+  ]
+}
