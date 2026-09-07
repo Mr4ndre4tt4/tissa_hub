@@ -226,7 +226,7 @@ function apont(over: Partial<LeituraXlsm['apontamentos'][number]> & { linha: num
     workDate: '2026-06-10',
     dataBruta: '46183',
     problemaData: null,
-    referenciaBruta: 'RR23300936',
+    referenciaBruta: 'RR90000015',
     descricao: 'Análise do erro',
     descricaoCalculada: false,
     tipoAtuacao: 'Análise',
@@ -268,7 +268,7 @@ describe('AC-024 / AC-026 — apontamentos do XLSM', () => {
 
   it('AC-024: atividade com dois chamados gera pendência de rateio e não credita nenhum', () => {
     const base = baseVazia();
-    const leitura = { ...leituraXlsmVazia(), apontamentos: [apont({ linha: 215, referenciaBruta: 'IR32043578 ; RR23811390', duracaoMinutos: 120 })] };
+    const leitura = { ...leituraXlsmVazia(), apontamentos: [apont({ linha: 215, referenciaBruta: 'IR90000013 ; RR90000014', duracaoMinutos: 120 })] };
     const p = previaXlsm(base, docXlsm(), leitura);
 
     const pendencia = p.issues.find((i) => i.tipo === 'rateio_indefinido');
@@ -381,7 +381,7 @@ describe('AC-050 / AC-053 — follow-ups, tarefas e desenvolvimento não criam h
         {
           linha: 6,
           data: { data: '2026-06-10', bruto: '46183', problema: null },
-          referenciaBruta: 'RR23300936',
+          referenciaBruta: 'RR90000015',
           descricao: 'Cobrança por e-mail',
           tipo: 'FUP',
           tentativa: 1,

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23334049'/%3E%3Crect x='8' y='9' width='16' height='3' rx='1.5' fill='%23A6BAC8'/%3E%3Crect x='8' y='15' width='16' height='3' rx='1.5' fill='%23D1E6D2'/%3E%3Crect x='8' y='21' width='10' height='3' rx='1.5' fill='%23FAFAFA'/%3E%3C/svg%3E" />
+    <title>Central de Chamados</title>
+    <meta name="description" content="Controle pessoal de chamados e esforço, com dados no OneDrive pessoal." />
+    <!-- Sem rastreador e sem captura de sessão. Nenhum recurso externo é carregado. -->
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.sharepoint.com https://*.up.1drv.com https://*.files.1drv.com; frame-src https://login.microsoftonline.com; object-src 'none'; base-uri 'none'; form-action 'none'" />
+  </head>
+  <body>
+    <div id="raiz"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

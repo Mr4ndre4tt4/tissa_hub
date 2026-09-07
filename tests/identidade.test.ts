@@ -14,53 +14,53 @@ import {
 } from '../src/domain/entities/celulas';
 
 describe('AC-031 — duas referências numa linha', () => {
-  it('RR22112787/RR23581261 vira grupo com dois candidatos, sem fundir tickets', () => {
-    const r = lerReferencia('RR22112787/RR23581261');
+  it('RR90000011/RR90000012 vira grupo com dois candidatos, sem fundir tickets', () => {
+    const r = lerReferencia('RR90000011/RR90000012');
     expect(r.multiplo).toBe(true);
-    expect(r.candidatos.map((c) => c.normalizado)).toEqual(['RR22112787', 'RR23581261']);
+    expect(r.candidatos.map((c) => c.normalizado)).toEqual(['RR90000011', 'RR90000012']);
     expect(r.candidatos.every((c) => c.namespace === 'RR')).toBe(true);
-    expect(r.bruto).toBe('RR22112787/RR23581261');
+    expect(r.bruto).toBe('RR90000011/RR90000012');
   });
 
-  it('B215: "IR32043578 ; RR23811390" separa namespaces distintos', () => {
-    const r = lerReferencia('IR32043578 ; RR23811390');
+  it('B215: "IR90000013 ; RR90000014" separa namespaces distintos', () => {
+    const r = lerReferencia('IR90000013 ; RR90000014');
     expect(r.candidatos.map((c) => [c.namespace, c.normalizado])).toEqual([
-      ['IR', 'IR32043578'],
-      ['RR', 'RR23811390'],
+      ['IR', 'IR90000013'],
+      ['RR', 'RR90000014'],
     ]);
   });
 
-  it('B294: "RR23300936 / RR22812009" é múltiplo', () => {
-    const r = lerReferencia('RR23300936 / RR22812009');
+  it('B294: "RR90000015 / RR90000016" é múltiplo', () => {
+    const r = lerReferencia('RR90000015 / RR90000016');
     expect(r.multiplo).toBe(true);
     expect(r.candidatos).toHaveLength(2);
   });
 });
 
 describe('AC-032 — referências compostas e namespaces', () => {
-  it('B240: IR32064696_INC3408222 são dois namespaces relacionados', () => {
-    const r = lerReferencia('IR32064696_INC3408222');
+  it('B240: IR90000017_INC90000018 são dois namespaces relacionados', () => {
+    const r = lerReferencia('IR90000017_INC90000018');
     expect(r.composto).toBe(true);
     expect(r.candidatos.map((c) => c.namespace)).toEqual(['IR', 'INC']);
     // O texto completo continua sendo a referência bruta: nenhum ticket fictício.
-    expect(r.bruto).toBe('IR32064696_INC3408222');
+    expect(r.bruto).toBe('IR90000017_INC90000018');
   });
 
-  it('B310: CR2238_RR23563421 mantém CR e RR separados', () => {
-    const r = lerReferencia('CR2238_RR23563421');
+  it('B310: CR90019_RR90000020 mantém CR e RR separados', () => {
+    const r = lerReferencia('CR90019_RR90000020');
     expect(r.composto).toBe(true);
     expect(r.candidatos.map((c) => c.namespace)).toEqual(['CR', 'RR']);
   });
 
-  it('B170: SCTASK1257370 tem namespace próprio, não IR/RR', () => {
-    const r = lerReferencia('SCTASK1257370');
+  it('B170: SCTASK90000021 tem namespace próprio, não IR/RR', () => {
+    const r = lerReferencia('SCTASK90000021');
     expect(r.multiplo).toBe(false);
     expect(r.candidatos[0]!.namespace).toBe('SCTASK');
   });
 
   it('RITM e INC não são tratados como IR/RR', () => {
     expect(lerReferencia('RITM0012345').candidatos[0]!.namespace).toBe('RITM');
-    expect(lerReferencia('INC3408222').candidatos[0]!.namespace).toBe('INC');
+    expect(lerReferencia('INC90000018').candidatos[0]!.namespace).toBe('INC');
   });
 
   it('um sublinhado que não separa namespaces não vira composto', () => {
@@ -73,21 +73,21 @@ describe('AC-032 — referências compostas e namespaces', () => {
 
 describe('AC-033 — espaços, caixa e identidade', () => {
   it('normaliza para comparar mas preserva o bruto', () => {
-    const r = lerReferencia('  rr22112787 ');
-    expect(r.candidatos[0]!.normalizado).toBe('RR22112787');
-    expect(r.candidatos[0]!.bruto).toBe('rr22112787');
+    const r = lerReferencia('  rr90000011 ');
+    expect(r.candidatos[0]!.normalizado).toBe('RR90000011');
+    expect(r.candidatos[0]!.bruto).toBe('rr90000011');
   });
 
   it('espaço não separável (NBSP) não cria identidade diferente', () => {
-    expect(normalizarParaComparacao(' RR22112787 ')).toBe('RR22112787');
+    expect(normalizarParaComparacao(' RR90000011 ')).toBe('RR90000011');
   });
 
   it('a chave oficial não usa título nem Reference ID', () => {
-    const k1 = chaveOficial('ws', 'CS3', 'incident', 'IR32043578');
-    const k2 = chaveOficial('ws', 'CS3', 'incident', ' ir32043578 ');
+    const k1 = chaveOficial('ws', 'CS3', 'incident', 'IR90000013');
+    const k2 = chaveOficial('ws', 'CS3', 'incident', ' ir90000013 ');
     expect(k1).toBe(k2);
     // Mesmo ID em tipos diferentes é identidade diferente.
-    expect(chaveOficial('ws', 'CS3', 'request', 'IR32043578')).not.toBe(k1);
+    expect(chaveOficial('ws', 'CS3', 'request', 'IR90000013')).not.toBe(k1);
   });
 
   it('célula vazia não produz candidato', () => {

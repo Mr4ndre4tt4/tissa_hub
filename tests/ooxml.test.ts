@@ -172,10 +172,10 @@ describe('AC-058 — exportação trata conteúdo como texto', () => {
   });
 
   it('o CSV exportado sai em UTF-8 com BOM e mantém a duração em minutos', () => {
-    const csv = gerarCsv(['Chamado', 'Minutos', 'Duração'], [['RR23300936', 273, '4h33']]);
+    const csv = gerarCsv(['Chamado', 'Minutos', 'Duração'], [['RR90000015', 273, '4h33']]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const linhas = analisarCsv(csv);
-    expect(linhas[1]!.campos).toEqual(['RR23300936', '273', '4h33']);
+    expect(linhas[1]!.campos).toEqual(['RR90000015', '273', '4h33']);
   });
 
   it('escapa aspas e caracteres XML na exportação', () => {

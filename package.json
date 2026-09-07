@@ -11,7 +11,9 @@
     "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false --pretty",
     "test": "vitest run",
     "test:watch": "vitest",
-    "baseline": "tsx scripts/verificar-baseline.ts"
+    "baseline": "tsx scripts/verificar-baseline.ts",
+    "verificar:interface": "node scripts/verificar-interface.mjs",
+    "test:restrito": "vitest run --config vitest.restrito.config.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "3.28.1",
@@ -24,6 +26,7 @@
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
+    "playwright": "1.49.1",
     "tsx": "4.19.2",
     "typescript": "5.6.3",
     "vite": "5.4.11",

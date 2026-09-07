@@ -76,7 +76,7 @@ describe('AC-007 — coluna ausente na origem não entra na conciliação', () =
 function cand(over: Partial<CandidatoOrigem> & { linha: number }): CandidatoOrigem {
   return {
     workDate: '2026-06-10',
-    referenciaBruta: 'RR23300936',
+    referenciaBruta: 'RR90000015',
     descricao: 'Análise do erro de faturamento',
     duracaoMinutos: 120,
     tipoAtuacao: 'Análise',

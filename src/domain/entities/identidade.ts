@@ -67,9 +67,12 @@ export function interpretarToken(bruto: string): ReferenciaExterna | null {
 }
 
 /**
- * Referências compostas por `_` (ex.: `IR32064696_INC3408222`, `CR2238_RR23563421`).
+ * Referências compostas por `_` (forma `IR9000001_INC9000002`, `CR9001_RR9000003`).
  * São namespaces distintos relacionados, não um único ticket: devolvemos as
  * partes como candidatos e mantemos o texto completo como referência bruta.
+ *
+ * Os exemplos usam a faixa sintética 9xxxxxxx: identificadores reais do cliente
+ * não entram em código, exemplo ou build (secção 1).
  */
 export function separarComposto(bruto: string): ReferenciaExterna[] {
   const partes = bruto.split('_').map((p) => p.trim()).filter((p) => p.length > 0);
@@ -93,11 +96,12 @@ export interface LeituraReferencia {
 /**
  * Lê uma célula de referência do legado.
  *
- * Exemplos cobertos pelo baseline:
- *  - `RR22112787/RR23581261`   → dois candidatos, múltiplo
- *  - `IR32043578 ; RR23811390` → dois candidatos, múltiplo
- *  - `IR32064696_INC3408222`   → dois candidatos, composto
- *  - `SCTASK1257370`           → um candidato, namespace próprio
+ * Formas cobertas pelo baseline (exemplos na faixa sintética 9xxxxxxx; os
+ * valores reais ficam apenas nos insumos privados e nos testes restritos):
+ *  - `RR9000001/RR9000002`    → dois candidatos, múltiplo
+ *  - `IR9000003 ; RR9000004`  → dois candidatos, múltiplo
+ *  - `IR9000005_INC9000006`   → dois candidatos, composto
+ *  - `SCTASK9000007`          → um candidato, namespace próprio
  */
 export function lerReferencia(bruto: string | null | undefined): LeituraReferencia {
   const texto = (bruto ?? '').replace(/ /g, ' ').trim();
