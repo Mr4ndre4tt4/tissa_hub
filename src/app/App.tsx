@@ -40,6 +40,11 @@ const MENU: { chave: Rota['tela']; rotulo: string }[] = [
   { chave: 'configuracoes', rotulo: 'Configurações' },
 ];
 
+/** O retorno do provedor deve sair da entrada somente após conexão real. */
+export function deveAbrirAplicacaoAposConectar(modo: string, tela: Rota['tela']): boolean {
+  return modo === 'conectado' && tela === 'entrada';
+}
+
 function lerRota(): Rota {
   const hash = window.location.hash.replace(/^#\/?/, '');
   const [tela, id] = hash.split('/');
@@ -57,6 +62,20 @@ export function App() {
     window.addEventListener('hashchange', aoMudar);
     return () => window.removeEventListener('hashchange', aoMudar);
   }, []);
+
+  /*
+   * O retorno do login Microsoft abre novamente a URL raiz. A conexão é
+   * concluída de forma assíncrona pelo ProvedorApp; quando ela termina, não
+   * podemos continuar mostrando a tela de entrada como se o login tivesse
+   * falhado. O modo demonstrativo já navega pelo callback do botão, enquanto
+   * a autenticação por redirecionamento precisa desta transição explícita.
+  */
+  useEffect(() => {
+    if (deveAbrirAplicacaoAposConectar(modo, rota.tela)) {
+      window.location.hash = '/dia';
+      setRota({ tela: 'dia' });
+    }
+  }, [modo, rota.tela]);
 
   const navegar = (r: Rota) => {
     window.location.hash = r.tela === 'chamado' ? `/chamado/${encodeURIComponent(r.id)}` : `/${r.tela}`;
@@ -267,6 +286,7 @@ function Recuperacao() {
 function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
   const { config, entrarNoModoDemonstrativo, entrarComMicrosoft, erroConexao } = useApp();
   const configurada = integracaoConfigurada(config);
+  const precisaAtivarOneDrive = erroConexao?.includes('https://onedrive.live.com/') ?? false;
 
   return (
     <Moldura>
@@ -277,7 +297,20 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
           não existe formulário de senha aqui: a autenticação é feita pela própria Microsoft.
         </p>
 
-        {erroConexao && <Aviso tipo="atencao" titulo="Última tentativa falhou.">{erroConexao}</Aviso>}
+        {erroConexao && (
+          <Aviso tipo="atencao" titulo="Última tentativa falhou.">
+            <p>{erroConexao}</p>
+            {precisaAtivarOneDrive && (
+              <p>
+                <a href="https://onedrive.live.com/" target="_blank" rel="noreferrer">
+                  Abrir o OneDrive desta conta
+                </a>
+                . Conclua a tela inicial, se aparecer, e aguarde a lista de arquivos carregar. <strong>Não crie nenhuma pasta manualmente:</strong>{' '}
+                a Microsoft cria a pasta correta para este aplicativo.
+              </p>
+            )}
+          </Aviso>
+        )}
 
         {configurada ? (
           <>

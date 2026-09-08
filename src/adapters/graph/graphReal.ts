@@ -61,7 +61,12 @@ function paraItem(r: RespostaItem): ItemDrive {
 }
 
 export class GraphReal implements ClienteGraph {
-  constructor(private readonly tokens: ProvedorDeToken) {}
+  constructor(
+    private readonly tokens: ProvedorDeToken,
+    /** Injetável para que a retentativa seja determinística nos testes. */
+    private readonly aguardar: (milissegundos: number) => Promise<void> =
+      (milissegundos) => new Promise((resolver) => setTimeout(resolver, milissegundos)),
+  ) {}
 
   private async requisitar(
     caminho: string,
@@ -99,8 +104,35 @@ export class GraphReal implements ClienteGraph {
   }
 
   async approot(): Promise<ItemDrive> {
-    const r = await this.requisitar('/me/drive/special/approot');
-    return paraItem((await r.json()) as RespostaItem);
+    /*
+     * Logo depois do primeiro consentimento, o Graph pode reconhecer o drive
+     * antes de terminar de materializar a pasta especial do aplicativo. Nessa
+     * janela ele responde 404/ItemNotFound. Uma nova tentativa é segura: este
+     * GET é idempotente e é justamente a operação documentada que cria/abre o
+     * approot. Não fazemos fallback para `/root`, pois isso ampliaria o acesso
+     * além de Files.ReadWrite.AppFolder.
+     */
+    for (let tentativa = 0; tentativa < 3; tentativa += 1) {
+      try {
+        const r = await this.requisitar('/me/drive/special/approot');
+        return paraItem((await r.json()) as RespostaItem);
+      } catch (e) {
+        if (!(e instanceof ErroGraph) || e.codigo !== 'nao_encontrado') throw e;
+        if (tentativa < 2) {
+          await this.aguardar(500 * (tentativa + 1));
+          continue;
+        }
+        throw new ErroGraph(
+          'O OneDrive desta conta ainda não disponibilizou a pasta do aplicativo. ' +
+            'Abra https://onedrive.live.com/ uma vez para concluir a ativação do OneDrive e depois volte e tente novamente. ' +
+            'Não crie a pasta manualmente: o Microsoft Graph precisa criá-la com a identidade correta do aplicativo.',
+          'nao_encontrado',
+          e.status,
+        );
+      }
+    }
+    // O laço sempre retorna ou lança; mantém o estreitamento do TypeScript.
+    throw new Error('Falha inesperada ao abrir a pasta do aplicativo.');
   }
 
   async filhos(pastaId: string): Promise<ItemDrive[]> {

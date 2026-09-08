@@ -38,6 +38,28 @@ Valores em branco significam “entrada real ainda não fornecida”. Não preen
 com exemplo fictício: o aplicativo trata branco como não configurado e mostra a
 mensagem correta.
 
+### 1.1 `ItemNotFound` logo depois de escolher a conta
+
+O acesso à pasta do aplicativo começa por `GET /me/drive/special/approot`. Na
+primeira autorização, o Graph pode responder temporariamente `404 ItemNotFound`
+enquanto materializa essa pasta — inclusive nas primeiras operações de filhos,
+depois que o próprio `approot` já respondeu. A aplicação repete a leitura do
+`approot` e também a inicialização completa da estrutura. As operações são
+idempotentes e conflitos são relidos, portanto a retentativa não cria bases
+paralelas. Ela não troca para a raiz do drive nem amplia a permissão concedida.
+
+Se o erro continuar, abra `https://onedrive.live.com/` com a mesma conta para
+concluir a ativação inicial do OneDrive. Depois volte à Central e tente entrar
+novamente. Uma conta sem OneDrive provisionado não possui uma pasta na qual a
+Central possa guardar a base; nesse caso o aplicativo mostra essa orientação em
+vez da mensagem técnica “Item not found”.
+
+**Não crie nenhuma pasta à mão.** Ao abrir o OneDrive, basta concluir termos ou
+telas iniciais que forem apresentados e esperar a lista de arquivos aparecer.
+O Microsoft Graph cria a pasta especial vinculada à identidade do aplicativo;
+uma pasta comum chamada “Central de Chamados” não substitui esse vínculo e não
+resolveria o `ItemNotFound`.
+
 ---
 
 ## 2. Prova técnica bloqueante (secção 16.5)
@@ -113,17 +135,14 @@ continua sendo uma alternativa válida, sem mudar o destino dos dados.
    errado deixaria o site em branco em silêncio) e que **não há planilha,
    identificador de chamado fora da faixa sintética nem hash de insumo
    privado** (AC-059);
-4. **publicar** — substitui o branch `gh-pages` com o conteúdo de `dist/`.
+4. **publicar** — envia `dist/` como artifact e cria um deployment oficial do
+   GitHub Pages, cujo endereço fica registrado no resumo da execução.
 
-**Por que pelo branch e não por "GitHub Actions".** O `GITHUB_TOKEN` não tem
-permissão para criar o site do Pages pela API — devolve "Resource not accessible
-by integration" — e a habilitação manual por "Source: GitHub Actions" não
-funcionou neste repositório. Ao publicar num branch, o GitHub habilita o Pages
-sozinho e o workflow precisa apenas de `contents: write`, sem permissão especial
-nem configuração manual.
-
-O branch `gh-pages` guarda o site, não histórico: é substituído a cada
-publicação (`push -f`). Nunca edite nada nele; a fonte é sempre `main`.
+O site precisa estar habilitado com **Source: GitHub Actions** em Settings →
+Pages. O workflow não tenta criar o site pela API: depois de habilitado uma vez,
+usa as permissões mínimas `contents: read`, `pages: write` e `id-token: write`.
+Não há branch de build para selecionar nem `push --force`; a fonte é sempre
+`main` e cada execução publica um artifact identificado.
 
 ### 4.2 Sequência completa
 
