@@ -65,13 +65,35 @@ jobs:
 
       - run: npm ci
 
-      # Habilita o Pages na primeira execução, com origem "GitHub Actions".
-      # Evita depender de uma configuração manual no repositório.
+      # Tenta habilitar o Pages sozinho. O GITHUB_TOKEN normalmente NÃO tem
+      # permissão para criar o site ("Resource not accessible by integration"),
+      # então a falha aqui é tratada e explicada no passo seguinte, em vez de
+      # quebrar a execução com um erro críptico.
       - name: Preparar o Pages
         id: pages
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
+      - name: Instruir quando o Pages ainda não estiver habilitado
+        if: steps.pages.outcome == 'failure'
+        run: |
+          echo "::error title=GitHub Pages não está habilitado::É preciso habilitar uma única vez, à mão."
+          cat <<'FIM'
+
+          O workflow não consegue criar o site do Pages: o GITHUB_TOKEN não tem
+          permissão para isso. É uma configuração de repositório, e só precisa
+          ser feita uma vez.
+
+          Faça assim:
+            1. Settings → Pages
+            2. Em "Build and deployment", campo "Source": escolha GitHub Actions
+            3. Volte em Actions → "Publicar interface" → Run workflow
+
+          Depois disso todas as publicações passam a ser automáticas.
+          FIM
+          exit 1
 
       - name: Construir
         env:
@@ -86,9 +108,19 @@ jobs:
         run: npm run build
 
       # Nenhum insumo privado pode entrar no que vai ao ar (AC-059).
-      - name: Conferir privacidade do build
+      - name: Conferir o build
+        env:
+          BASE_ESPERADA: ${{ steps.pages.outputs.base_path }}/
         run: |
           set -e
+          # Caminho base errado quebra todos os assets em silêncio; confere no HTML.
+          if ! grep -q "src=\"${BASE_ESPERADA}assets/" dist/index.html; then
+            echo "FALHA: o index.html não referencia os assets em ${BASE_ESPERADA}assets/."
+            grep -oE '(src|href)="[^"]*assets[^"]*"' dist/index.html || true
+            exit 1
+          fi
+          echo "Caminho base correto: ${BASE_ESPERADA}"
+
           if find dist -type f \( -name '*.xlsm' -o -name '*.xlsx' -o -name '*.csv' \) | grep -q .; then
             echo "FALHA: o build contém um arquivo de planilha."; exit 1
           fi
