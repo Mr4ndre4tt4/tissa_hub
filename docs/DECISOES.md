@@ -470,3 +470,38 @@ erro corrigido para `'nao_encontrado'` na decisão 13, mas esquecido aqui.
 origens de `'transporte'`: um status HTTP não classificado (detalhe com
 método, caminho e status) e uma falha real de `fetch()` (detalhe começando com
 "A conexão falhou:") — as duas precisam aparecer na mensagem final.
+
+---
+
+## 17. Marcador de provisionamento sem ponto inicial, e erro com `code` + `innerError`
+
+**Decisão.** O nome do marcador de provisionamento (decisão 14) muda de
+`.provisionamento` para `provisionamento-inicial`, sem ponto no início.
+`GraphReal.requisitar()` passa a incluir, quando presentes, `error.code`,
+`error.innerError.code`, `error.innerError.message` e o cabeçalho
+`request-id` da resposta — não só `error.message`.
+
+**Por quê.** Com a correção da decisão 16, o próprio
+`POST .../special/approot/children` (decisão 14) devolveu, contra a conta
+real e já com o consentimento amplo da decisão 15, `400 Invalid request` —
+sem mais detalhe. Essa mensagem rasa não chega a dizer qual parte do corpo foi
+rejeitada. A diferença mais concreta entre o corpo enviado e os exemplos
+documentados de criação de item (`driveItem: post children`) é o nome do
+marcador começar com ponto — não confirmado como a causa, mas é a hipótese
+mais barata de testar, e não tem custo (o nome do marcador é só um detalhe de
+implementação, nunca lido de volta).
+
+**Por que não parar de investigar aqui.** Duas hipóteses de forma de chamada já
+foram tentadas e falharam contra a conta real (decisão 14: caminho com
+dois-pontos, 404; decisão 14: alias sem dois-pontos com nome de ponto, 400).
+Se esta tentativa falhar de novo, a pesquisa por documentação — que já errou
+duas vezes o suficiente para a conta real recusar a chamada — deixa de ser
+confiável o bastante para mais uma tentativa às cegas. O próximo passo, se
+necessário, é testar a chamada diretamente no Graph Explorer
+(`developer.microsoft.com/graph/graph-explorer`) com a conta real, para ver a
+resposta completa em vez de inferir de exemplos genéricos.
+
+**Trava de regressão.** `tests/graphReal.test.ts` confere que o corpo do
+marcador não começa com ponto, e que `error.code`, `innerError.code`,
+`innerError.message` e `request-id` aparecem todos na mensagem final quando
+presentes na resposta.

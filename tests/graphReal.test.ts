@@ -68,6 +68,39 @@ describe('GraphReal — erro HTTP traz método e caminho', () => {
       expect((e as ErroGraph).message).toContain('/me/drive/items/pai-id/children');
     }
   });
+
+  it('inclui o código do erro, o innerError e o request-id quando presentes', async () => {
+    // "Invalid request." sozinho (relato real, 400 em special/approot/children)
+    // não diz por quê. error.code e innerError costumam ter a causa real.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: 'invalidRequest',
+                message: 'Invalid request.',
+                innerError: { code: 'invalidRequestBody', message: 'The name property is not valid.' },
+              },
+            }),
+            { status: 400, headers: { 'request-id': 'req-123' } },
+          ),
+      ),
+    );
+
+    const graph = new GraphReal(TOKEN);
+    try {
+      await graph.criarPasta('pai-id', 'x');
+      expect.unreachable();
+    } catch (e) {
+      const detalhe = (e as ErroGraph).message;
+      expect(detalhe).toContain('invalidRequest');
+      expect(detalhe).toContain('invalidRequestBody');
+      expect(detalhe).toContain('The name property is not valid.');
+      expect(detalhe).toContain('req-123');
+    }
+  });
 });
 
 describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela não existe', () => {
@@ -103,7 +136,7 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
           return itemResposta('approot-id-provisionado');
         }
         // POST da pasta-marcador de provisionamento, pelo alias — sem dois-pontos.
-        return new Response(JSON.stringify({ id: 'marcador-id', name: '.provisionamento', folder: {} }), { status: 201 });
+        return new Response(JSON.stringify({ id: 'marcador-id', name: 'provisionamento-inicial', folder: {} }), { status: 201 });
       }),
     );
 
@@ -117,10 +150,14 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
       'GET https://graph.microsoft.com/v1.0/me/drive/special/approot',
     ]);
     expect(chamadas[1]!.corpo).toMatchObject({
-      name: '.provisionamento',
+      name: 'provisionamento-inicial',
       folder: {},
       '@microsoft.graph.conflictBehavior': 'fail',
     });
+    // Sem ponto inicial: um nome começando com "." é a diferença mais
+    // concreta em relação aos exemplos documentados de criação de pasta, e
+    // uma tentativa real contra a conta devolveu 400 com o nome antigo.
+    expect((chamadas[1]!.corpo as { name: string }).name.startsWith('.')).toBe(false);
   });
 
   it('404 seguido de conflito no marcador: outra sessão provisionou primeiro, relê normalmente', async () => {

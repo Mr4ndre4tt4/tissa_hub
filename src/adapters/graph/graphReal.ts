@@ -92,15 +92,28 @@ export class GraphReal implements ClienteGraph {
       const retryAfter = Number(resposta.headers.get('Retry-After') ?? '');
       let mensagem = resposta.statusText;
       try {
-        const corpo = (await resposta.json()) as { error?: { message?: string } };
-        if (corpo?.error?.message) mensagem = corpo.error.message;
+        const corpo = (await resposta.json()) as {
+          error?: { code?: string; message?: string; innerError?: { code?: string; message?: string } };
+        };
+        const partes = [
+          corpo?.error?.code,
+          corpo?.error?.message,
+          corpo?.error?.innerError?.code,
+          corpo?.error?.innerError?.message,
+        ].filter((p): p is string => typeof p === 'string' && p.length > 0);
+        // O código (`invalidRequest`, por exemplo) e o `innerError`, quando
+        // vêm, dizem mais que a mensagem genérica sozinha ("Invalid
+        // request.") — mensagens rasas da Microsoft já esconderam a causa
+        // demais vezes para descartar qualquer parte do corpo do erro.
+        if (partes.length > 0) mensagem = partes.join(' | ');
       } catch {
         // Corpo sem JSON: mantemos o texto do status.
       }
       // O caminho e o método vão junto: sem eles, uma mesma mensagem da
       // Microsoft ("Item not found", por exemplo) não diz qual chamada falhou.
       const metodo = init.method ?? 'GET';
-      const detalhe = `${metodo} ${caminho} → ${resposta.status} ${mensagem}`;
+      const idDaRequisicao = resposta.headers.get('request-id');
+      const detalhe = `${metodo} ${caminho} → ${resposta.status} ${mensagem}${idDaRequisicao ? ` (request-id: ${idDaRequisicao})` : ''}`;
       throw new ErroGraph(detalhe, traduzirStatus(resposta.status), resposta.status, Number.isFinite(retryAfter) ? retryAfter : undefined);
     }
 
@@ -147,7 +160,7 @@ export class GraphReal implements ClienteGraph {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: '.provisionamento',
+          name: 'provisionamento-inicial',
           folder: {},
           '@microsoft.graph.conflictBehavior': 'fail',
         }),
