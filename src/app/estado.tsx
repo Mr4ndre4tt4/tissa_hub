@@ -178,12 +178,13 @@ export function explicar(e: unknown): string {
         return 'A conta não autorizou o acesso à pasta do aplicativo. A permissão não será ampliada automaticamente.';
       case 'nao_encontrado':
         // "Item not found" sozinho não diz qual chamada falhou; e.message agora
-        // traz o método e o caminho (ex.: "GET /me/drive/special/approot → 404
-        // Item not found"), então aparece por inteiro em vez de ser descartado.
+        // traz o método e o caminho (ex.: "GET /me/drive/items/xyz → 404 Item
+        // not found"), então aparece por inteiro em vez de ser descartado.
+        // A pasta do aplicativo (approot) já se auto-provisiona; um 404 aqui é
+        // outro item — provavelmente removido ou alterado fora do aplicativo.
         return (
-          'A Microsoft não encontrou o item esperado no OneDrive — provavelmente porque esta conta pessoal ainda ' +
-          'não tem um OneDrive provisionado (nunca foi aberto em onedrive.com) ou o consentimento não incluiu a ' +
-          `pasta do aplicativo. Detalhe: ${e.message}`
+          'A Microsoft não encontrou um item esperado no OneDrive. Ele pode ter sido movido, renomeado ou removido ' +
+          `fora do aplicativo. Detalhe: ${e.message}`
         );
       case 'limite_taxa':
         return `O serviço pediu para aguardar${e.retryAfterSegundos ? ` ${e.retryAfterSegundos} s` : ''} antes de tentar de novo.`;

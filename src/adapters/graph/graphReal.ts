@@ -1,18 +1,23 @@
 /**
  * Implementação real do Graph sobre `fetch`.
  *
- * ATENÇÃO — estado de verificação: este adaptador está implementado, tipado e
- * compilado, mas **nunca foi executado contra o Microsoft Graph real**, porque
- * a configuração pública (client ID e redirect URI) ainda não existe. A prova
- * técnica bloqueante da secção 16.5 continua pendente. Nada neste projeto deve
- * afirmar que a integração funciona antes dessa execução.
+ * ATENÇÃO — estado de verificação: o login contra o Microsoft Entra real
+ * passou a funcionar, e a primeira chamada real ao Graph (`approot()`) já foi
+ * exercitada — e corrigida (ver abaixo). O restante do protocolo — gravar e
+ * reler uma revisão, publicar o ponteiro com `If-Match`, conflito entre dois
+ * clientes — continua **sem confirmação na conta real**. A prova técnica
+ * bloqueante da secção 16.5 continua pendente. Nada neste projeto deve afirmar
+ * que a integração funciona por inteiro antes dessa execução.
  *
  * Decisões que este arquivo aplica:
  *  - download por `@microsoft.graph.downloadUrl`, usando a URL temporária sem
  *    anexar o bearer token e sem guardá-la em estado, log ou repositório (M3);
  *  - PATCH de propriedades sempre com `If-Match` (M6);
  *  - criação de pasta com `conflictBehavior: fail` (secção 16.3);
- *  - nenhuma chamada a `workbook/createSession`: conta pessoal não suporta (M4).
+ *  - nenhuma chamada a `workbook/createSession`: conta pessoal não suporta (M4);
+ *  - `approot()` provisiona a pasta do aplicativo com uma escrita quando ela
+ *    ainda não existe: diferente de contas corporativas, o OneDrive pessoal
+ *    **não** cria a pasta especial numa simples leitura (ver `approot()`).
  */
 
 import { ErroGraph, type ClienteGraph, type ItemDrive, type CodigoErroGraph } from './cliente';
@@ -102,9 +107,46 @@ export class GraphReal implements ClienteGraph {
     return resposta;
   }
 
+  /**
+   * Lê a pasta especial do aplicativo, provisionando-a se ainda não existir.
+   *
+   * Diferente de contas corporativas, o OneDrive pessoal **não** cria a pasta
+   * especial numa leitura: uma conta que nunca teve o aplicativo usado devolve
+   * 404 ("Item not found") em `GET .../special/approot`, mesmo com o
+   * consentimento certo e o OneDrive normal funcionando (relato confirmado
+   * contra a conta real). A documentação da Microsoft para pastas especiais é
+   * explícita: a pasta só passa a existir depois de uma **escrita** endereçada
+   * pelo caminho — daí o marcador vazio abaixo, que nunca é lido de volta.
+   */
   async approot(): Promise<ItemDrive> {
-    const r = await this.requisitar('/me/drive/special/approot');
-    return paraItem((await r.json()) as RespostaItem);
+    try {
+      const r = await this.requisitar('/me/drive/special/approot');
+      return paraItem((await r.json()) as RespostaItem);
+    } catch (e) {
+      if (!(e instanceof ErroGraph) || e.codigo !== 'nao_encontrado') throw e;
+      await this.provisionarPastaDoApp();
+      const r = await this.requisitar('/me/drive/special/approot');
+      return paraItem((await r.json()) as RespostaItem);
+    }
+  }
+
+  /** Escreve um marcador vazio dentro da pasta do app só para provisioná-la. */
+  private async provisionarPastaDoApp(): Promise<void> {
+    const caminho =
+      `/me/drive/special/approot:/.provisionamento:/content` +
+      `?@microsoft.graph.conflictBehavior=replace`;
+    try {
+      await this.requisitar(caminho, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        corpoBinario: new Uint8Array(0),
+      });
+    } catch (e) {
+      // Outra sessão pode ter provisionado entre a leitura e esta tentativa;
+      // seguimos e relemos approot normalmente.
+      if (e instanceof ErroGraph && e.codigo === 'conflito') return;
+      throw e;
+    }
   }
 
   async filhos(pastaId: string): Promise<ItemDrive[]> {

@@ -309,25 +309,60 @@ aplicativo, o ponteiro, uma revisão. Como o Microsoft Graph reaproveita a mesma
 mensagem genérica para itens diferentes, o texto sozinho não distingue os
 casos.
 
-**O que a explicação em `explicar()` já cobre.** A causa mais provável de um
-404 logo na primeira conexão é a conta pessoal nunca ter tido o OneDrive
-provisionado (a pessoa nunca abriu onedrive.com com essa conta) — o
-`/me/drive/special/approot` não tem uma unidade para responder. A mensagem
-diz isso, e mantém o detalhe técnico (`GET /me/drive/special/approot → 404
-…`) para quem precisar relatar com precisão.
-
 **Consequência para dados privados.** O caminho é estrutural (`/me/drive/...`,
 nomes de pasta fixos como `state-head`) — nunca contém texto de chamado nem
 identificador de trabalho, então pode aparecer na tela e em teste sem violar
 a secção 17.
 
 **Trava de regressão.** `tests/graphReal.test.ts` verifica que um 404 em
-`approot()` chega com método, caminho, status e mensagem no `ErroGraph`, e que
-um erro numa escrita (`criarPasta`) mostra `POST`, não sempre `GET`.
+`obterItem()` chega com método, caminho, status e mensagem no `ErroGraph`, e
+que um erro numa escrita (`criarPasta`) mostra `POST`, não sempre `GET`.
 `tests/erros-autenticacao.test.ts` verifica que `explicar()` traduz
-`nao_encontrado` com a hipótese de causa e preserva o detalhe original.
+`nao_encontrado` preservando o detalhe original.
 
-**Ainda em aberto.** Esta é uma correção de diagnóstico, não a causa raiz
-confirmada — falta o próximo relato, já com o caminho exato, para saber se é
-mesmo falta de provisionamento do OneDrive ou outra coisa (escopo não
-consentido de fato, por exemplo).
+---
+
+## 14. `approot()` provisiona a pasta do aplicativo antes de lê-la
+
+**Decisão.** `GraphReal.approot()` (`src/adapters/graph/graphReal.ts`) tenta o
+`GET .../special/approot` normalmente; se vier 404, escreve um marcador vazio
+em `.../special/approot:/.provisionamento:/content` (uma escrita endereçada
+pelo caminho) e só então relê. Um 409 nessa escrita — outra sessão provisionou
+primeiro — é absorvido; qualquer outro erro é propagado.
+
+**Por quê.** O caminho técnico exposto pela decisão 13 permitiu confirmar a
+causa raiz do 404 relatado: o detalhe chegou como `GET
+/me/drive/special/approot → 404 Item not found`, com a pessoa confirmando que
+(a) a tela de consentimento da Microsoft **não** apareceu nessa tentativa — o
+escopo já estava concedido de uma tentativa anterior — e (b) o OneDrive normal
+dessa conta funciona fora do aplicativo. As duas coisas descartam falta de
+consentimento e conta sem OneDrive. O que resta é um comportamento documentado
+da Microsoft para pastas especiais: diferente de contas corporativas, o
+OneDrive pessoal **não cria a pasta especial numa leitura** — só depois de uma
+escrita endereçada pelo caminho (`.../special/approot:/algo:/content` ou
+`.../special/approot:/children`), a pasta passa a existir e a responder ao
+`GET`.
+
+**Por que um marcador, e não a primeira pasta real (`state-head`).**
+`GraphReal` é a camada de transporte; não deveria saber o nome das pastas que
+`RepositorioOneDrive` decide criar (secção 4, `cliente.ts`: "a interface é
+mínima de propósito"). O marcador mantém a separação — `approot()` continua
+podendo ser chamado sem nenhum conhecimento do protocolo de revisões por cima
+dele — ao custo de uma escrita a mais, feita uma única vez por conta (nas
+chamadas seguintes o `GET` já funciona).
+
+**Consequência aceita.** A primeira conexão de cada conta grava um arquivo
+`.provisionamento` vazio dentro da pasta do aplicativo, que nunca é lido de
+volta e não aparece na estrutura documentada (secção 3 de `OPERACAO.md`). Não
+é removido porque o contrato do Graph (`ClienteGraph`) não inclui exclusão —
+adicioná-la só para isto ampliaria a interface por um caso único.
+
+**Ainda em aberto.** Só `approot()` foi exercitado contra a conta real. O
+restante do protocolo — gravar e reler uma revisão com verificação de SHA-256,
+publicar o ponteiro com `If-Match`, um 412 de conflito real — continua sem
+confirmação. A prova técnica bloqueante da secção 16.5 permanece pendente.
+
+**Trava de regressão.** `tests/graphReal.test.ts` cobre as quatro
+combinações: pasta já existe (nenhuma escrita), 404 seguido de provisionamento
+bem-sucedido, 404 seguido de 409 (outra sessão venceu, segue normalmente), e
+404 seguido de um erro real no marcador (propagado, não engolido).

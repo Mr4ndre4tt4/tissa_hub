@@ -119,10 +119,11 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
 
   it('um 404 do Graph explica a causa provável e mantém o detalhe original', () => {
     // Reproduz "Item not found" isolado, sem dizer qual chamada falhou — o
-    // detalhe agora traz método e caminho (ver graphReal.ts).
-    const erro = new ErroGraph('GET /me/drive/special/approot → 404 Item not found.', 'nao_encontrado', 404);
+    // detalhe agora traz método e caminho (ver graphReal.ts). approot() já se
+    // auto-provisiona, então um 404 chegando até aqui é outro item.
+    const erro = new ErroGraph('GET /me/drive/items/xyz → 404 Item not found.', 'nao_encontrado', 404);
     const texto = explicar(erro);
-    expect(texto).toMatch(/OneDrive provisionado/);
-    expect(texto).toContain('GET /me/drive/special/approot → 404 Item not found.');
+    expect(texto).toMatch(/movido, renomeado ou removido/);
+    expect(texto).toContain('GET /me/drive/items/xyz → 404 Item not found.');
   });
 });
