@@ -52,6 +52,25 @@ Para habilitar a integração, copie `.env.example` para `.env` e preencha o
 client ID e o redirect URI de um registro de aplicativo Microsoft que aceite
 contas pessoais. Veja [`docs/OPERACAO.md`](docs/OPERACAO.md).
 
+## Publicação
+
+A interface é publicada no GitHub Pages pelo workflow
+[`.github/workflows/publicar.yml`](.github/workflows/publicar.yml), disparado a
+cada push em `main`. Vão ao ar **apenas código e recursos públicos**: os dados
+de trabalho ficam no OneDrive pessoal e exigem autenticação Microsoft.
+
+Endereço: **https://mr4ndre4tt4.github.io/tissa_hub/**
+
+> **Falta um passo manual, uma única vez.** O `GITHUB_TOKEN` não tem permissão
+> para criar o site do Pages, então a publicação automática só funciona depois
+> de habilitar em **Settings → Pages → Source: GitHub Actions**. Enquanto isso
+> não for feito, o workflow para com essa instrução em vez de um erro obscuro.
+
+Depois de habilitado, a sequência para o aplicativo sair do modo demonstrativo
+está em [`docs/OPERACAO.md`](docs/OPERACAO.md), secção 4.2: registrar o
+aplicativo Microsoft com esse endereço como redirect URI, definir a variável
+`MS_CLIENT_ID` do repositório e republicar.
+
 ## Verificar
 
 ```bash
