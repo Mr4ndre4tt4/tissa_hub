@@ -721,3 +721,38 @@ simulado: recuperação bem-sucedida a partir do mesmo cenário do AC-065
 (ponteiro limpo por fora, revisão preservada); recusa quando o ponteiro já é
 válido (conflito, nada sobrescrito); recusa quando a revisão pertence a outra
 conta.
+
+---
+
+## 21. `baixarConteudo()` identifica o domínio quando a rede falha
+
+**Decisão.** `GraphReal.baixarConteudo()` inclui, na mensagem de erro, o
+domínio (via `new URL(...).host`) da URL de download — nunca o caminho nem a
+query string, que carregam a autenticação temporária dessa URL.
+
+**Por quê.** Ao tentar recuperar a revisão gravada (decisão 20), a conta real
+devolveu "A conexão falhou durante o download: Failed to fetch" — duas vezes
+seguidas, o que descarta instabilidade passageira de rede como explicação
+única. `index.html` declara uma política de segurança de conteúdo (CSP) com
+`connect-src` restrito a uma lista de domínios da Microsoft, incluindo
+`https://*.files.1drv.com` — mas o caractere `*` num host de CSP cobre **um**
+rótulo de subdomínio, não vários. URLs de download do OneDrive pessoal
+costumam ter mais de um rótulo antes de `files.1drv.com` (por exemplo,
+`public.bn1305.files.1drv.com`), e não bateriam com esse padrão — o mesmo
+tipo de erro sem detalhe que já apareceu várias vezes nesta investigação
+(decisões 12, 13, 16, 17), agora numa camada diferente (a política de
+segurança da própria página, não uma chamada ao Graph).
+
+**Por que não ampliar a CSP às cegas.** Sem o domínio real que a conta
+devolveu, ampliar a política seria adivinhar de novo — o mesmo erro que já
+custou tempo nas decisões 14 e 17 (tentar consertar sem primeiro confirmar a
+causa exata). A mensagem agora traz o domínio real; a política será ajustada
+com esse dado, não com suposição.
+
+**O que continua seguro.** A URL de download nunca é guardada em estado, log
+ou repositório (M3) — só o `host` extraído dela, no momento do erro, aparece
+na mensagem que a pessoa vê na tela.
+
+**Trava de regressão.** `tests/graphReal.test.ts` confere que o domínio da
+URL de download aparece no erro e que a query string (onde fica a
+autenticação temporária) nunca aparece.

@@ -1,7 +1,7 @@
 /**
  * `GraphReal` sobre `fetch`.
  *
- * Dois comportamentos cobertos:
+ * Três comportamentos cobertos:
  *  - um erro HTTP traz método, caminho, código e `innerError` junto da
  *    mensagem da Microsoft — mensagens rasas ("Item not found", "Invalid
  *    request.") já esconderam a causa demais vezes neste projeto para
@@ -12,7 +12,11 @@
  *    `RepositorioOneDrive.inicializar()` usa para as subpastas. Não é mais o
  *    mecanismo especial `special/approot`: confirmado contra a conta real que
  *    ele não funciona nesta conta por nenhum método testado, enquanto uma
- *    pasta comum na raiz funciona normalmente (DECISOES.md §18-19).
+ *    pasta comum na raiz funciona normalmente (DECISOES.md §18-19);
+ *  - `baixarConteudo()` inclui o domínio (nunca o caminho nem a query, que
+ *    carregam a autenticação temporária) da URL de download quando a rede
+ *    falha — sem isso, "Failed to fetch" sozinho não diz qual domínio
+ *    precisaria ser liberado numa política de segurança restritiva.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GraphReal, NOME_PASTA_DO_APP, type ProvedorDeToken } from '../src/adapters/graph/graphReal';
@@ -190,5 +194,40 @@ describe('GraphReal — approot() lê ou cria a pasta do aplicativo por nome, na
     const graph = new GraphReal(TOKEN);
     await expect(graph.approot()).rejects.toMatchObject({ codigo: 'proibido', status: 403 });
     expect(chamadas).toEqual([`GET ${CAMINHO_LEITURA}`]);
+  });
+});
+
+describe('GraphReal — baixarConteudo() identifica o domínio quando a rede falha', () => {
+  it('inclui só o domínio da URL de download no erro, nunca o caminho nem a query (a autenticação)', async () => {
+    const urlDownload = 'https://public.bn1305.files.1drv.com/y4p/segredo-de-uma-vez?tempauth=abc123';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === urlDownload) throw new TypeError('Failed to fetch');
+        return new Response(
+          JSON.stringify({ id: 'item-x', name: 'x.json', '@microsoft.graph.downloadUrl': urlDownload }),
+          { status: 200 },
+        );
+      }),
+    );
+
+    const graph = new GraphReal(TOKEN);
+    try {
+      await graph.baixarConteudo('item-x');
+      expect.unreachable();
+    } catch (e) {
+      const detalhe = (e as ErroGraph).message;
+      expect(detalhe).toContain('public.bn1305.files.1drv.com');
+      expect(detalhe).toContain('Failed to fetch');
+      expect(detalhe).not.toContain('tempauth');
+      expect(detalhe).not.toContain('segredo-de-uma-vez');
+    }
+  });
+
+  it('sem URL de download, recusa antes de tentar qualquer coisa', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ id: 'item-x', name: 'x.json' }), { status: 200 })));
+
+    const graph = new GraphReal(TOKEN);
+    await expect(graph.baixarConteudo('item-x')).rejects.toMatchObject({ codigo: 'nao_encontrado' });
   });
 });

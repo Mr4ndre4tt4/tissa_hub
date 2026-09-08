@@ -228,7 +228,18 @@ export class GraphReal implements ClienteGraph {
       // e ela não é guardada em estado, log nem repositório.
       resposta = await fetch(item.downloadUrl);
     } catch (e) {
-      throw new ErroGraph(`A conexão falhou durante o download: ${(e as Error).message}`, 'transporte');
+      // Só o domínio da URL de download entra na mensagem — nunca o caminho
+      // nem a query string, que carregam a autenticação temporária. Sem isso,
+      // uma falha aqui (frequentemente a política de segurança da página
+      // bloqueando um domínio de CDN da Microsoft não previsto) não dizia
+      // qual domínio precisava ser liberado.
+      let origem = '';
+      try {
+        origem = ` (origem: ${new URL(item.downloadUrl).host})`;
+      } catch {
+        // URL malformada: segue sem o domínio em vez de falhar por isto.
+      }
+      throw new ErroGraph(`A conexão falhou durante o download${origem}: ${(e as Error).message}`, 'transporte');
     }
     if (!resposta.ok) {
       throw new ErroGraph(`Falha ao baixar o conteúdo: ${resposta.status}`, traduzirStatus(resposta.status), resposta.status);
