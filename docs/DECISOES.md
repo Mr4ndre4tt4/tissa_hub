@@ -970,3 +970,62 @@ criação do provisório, reaproveitamento sem duplicar (mesma citação duas
 vezes no mesmo apontamento, citação repetida numa edição, chamado já
 existente), e o caso de atividade interna sem referência não criar nada.
 `npx tsc -b`, `npm test` (267 testes) e `npm run build` passam.
+
+---
+
+## 27. A causa real por trás de "Recuperação necessária" reaparecendo sempre
+
+**O relato.** Logada com a conta real, a pessoa importou um CSV de 13
+registros, confirmou a carga, e caiu direto em "Recuperação necessária" —
+ponteiro vazio, 1 revisão gravada com o carimbo de horário de segundos
+atrás. Não era a primeira vez: o mesmo sintoma, com uma revisão órfã
+diferente a cada vez, já tinha aparecido em pontos anteriores desta sessão
+(inclusive na primeira mensagem deste chat) e motivou tanto a recuperação
+manual (decisão 20) quanto o roteamento de `mutar()` para o modo
+`recuperacao` (decisão 25). Essas duas correções tratavam o **sintoma** —
+dar um caminho de saída quando isso acontece — nenhuma delas explicava
+**por que** o ponteiro aparecia vazio logo depois de uma publicação
+bem-sucedida, contra dados reais, de forma repetida.
+
+**A causa.** `GraphReal.obterItem()` (`graphReal.ts`) fazia uma leitura
+simples de driveItem: `GET /me/drive/items/{id}`, sem `$select`. A
+Microsoft **não devolve a propriedade `description` numa leitura assim** —
+comportamento documentado da API do Graph, não uma falha de rede ou de
+permissão. `paraItem()` mapeia a ausência do campo para string vazia
+(`r.description ?? ''`), e `lerPonteiro('')` devolve `null`. Resultado:
+toda vez que `carregarRevisaoAtiva()` relia a cabeça — o primeiro passo de
+`salvar()`, e de novo na confirmação do passo 7 — via um ponteiro vazio,
+**mesmo que o `PATCH` anterior tivesse gravado a descrição corretamente no
+servidor**. Como já existia pelo menos uma revisão gravada (a que acabara
+de ser publicada), isso é exatamente a condição que dispara
+`RecuperacaoNecessaria`. A recuperação manual (decisão 20) "funcionava"
+por não depender dessa leitura — ela usa a revisão já validada em memória
+e nunca relê a cabeça para confirmar — o que escondia o problema até a
+mutação seguinte relê-la de novo e reproduzir o mesmo sintoma.
+
+**Por que nunca apareceu nos testes.** A suíte roda contra um Graph
+simulado, em memória, que guarda e devolve `description` fielmente. Essa
+omissão é um comportamento específico da API real da Microsoft — só
+apareceria contra a conta real, e só numa leitura que dependesse desse
+campo logo depois de escrevê-lo, exatamente o padrão do protocolo de
+ponteiro (secção 16.2).
+
+**Correção.** `obterItem()` passa a pedir
+`$select=id,name,eTag,cTag,description,size,folder,@microsoft.graph.downloadUrl`
+explicitamente. É o único ponto de leitura de item usado por
+`lerCabeca()` — `atualizarDescricao()`, `criarPasta()` e `filhos()` não
+precisam do mesmo ajuste porque nenhum outro código lê `.descricao` de um
+item que não tenha passado por `obterItem()`.
+
+**Trava de regressão.** `tests/graphReal.test.ts`: um novo bloco confirma
+que a URL de `obterItem()` inclui `description` no `$select`, e que a
+descrição é devolvida corretamente quando o servidor a inclui na resposta
+— a reprodução mínima do bug real seria justamente o oposto: um `$select`
+que não pede o campo, contra um servidor que só devolve o que foi pedido.
+
+**O que isto muda para a base já presa.** A revisão órfã que a pessoa está
+vendo agora continua gravada e recuperável pela tela de Recuperação (a
+decisão 20 nunca dependeu da leitura quebrada). Depois desta correção
+publicada, a expectativa é que o problema pare de **reaparecer** a cada
+mutação — mas isso só é confirmado depois de testar de novo contra a conta
+real, o que a secção 16.5 já cobra e ainda não rodou.

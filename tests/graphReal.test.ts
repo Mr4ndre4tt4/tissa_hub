@@ -17,6 +17,12 @@
  *    carregam a autenticação temporária) da URL de download quando a rede
  *    falha — sem isso, "Failed to fetch" sozinho não diz qual domínio
  *    precisaria ser liberado numa política de segurança restritiva.
+ *  - `obterItem()` pede `description` explicitamente com `$select` — a
+ *    Microsoft não devolve essa propriedade numa leitura simples de
+ *    driveItem (comportamento documentado). Sem isso, `lerCabeca()` lia
+ *    sempre uma descrição vazia, mesmo logo depois de um `PATCH`
+ *    bem-sucedido — o ponteiro "sumia" a cada mutação seguinte na conta
+ *    real, mesmo com a revisão gravada (DECISOES.md §27).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GraphReal, NOME_PASTA_DO_APP, type ProvedorDeToken } from '../src/adapters/graph/graphReal';
@@ -229,5 +235,40 @@ describe('GraphReal — baixarConteudo() identifica o domínio quando a rede fal
 
     const graph = new GraphReal(TOKEN);
     await expect(graph.baixarConteudo('item-x')).rejects.toMatchObject({ codigo: 'nao_encontrado' });
+  });
+});
+
+describe('GraphReal — obterItem() sempre pede description explicitamente', () => {
+  it('inclui description no $select da leitura do item', async () => {
+    // Reprodução do bug real: sem $select, a Microsoft omite `description` da
+    // resposta mesmo quando o campo tem valor no servidor — e o código lia
+    // isso como ponteiro vazio a cada chamada, mesmo logo depois de publicar.
+    const chamadas: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        chamadas.push(url);
+        return new Response(JSON.stringify({ id: 'state-head-id', name: 'state-head', eTag: 'etag-1', folder: {} }), { status: 200 });
+      }),
+    );
+
+    const graph = new GraphReal(TOKEN);
+    await graph.obterItem('state-head-id');
+
+    expect(chamadas).toHaveLength(1);
+    const url = new URL(chamadas[0]!);
+    const select = (url.searchParams.get('$select') ?? '').split(',');
+    expect(select).toContain('description');
+  });
+
+  it('devolve a description quando o servidor a inclui (leitura correta do ponteiro)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ id: 'state-head-id', name: 'state-head', eTag: 'etag-2', description: '{"ponteiro":"json"}', folder: {} }), { status: 200 })),
+    );
+
+    const graph = new GraphReal(TOKEN);
+    const item = await graph.obterItem('state-head-id');
+    expect(item.descricao).toBe('{"ponteiro":"json"}');
   });
 });

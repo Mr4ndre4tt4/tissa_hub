@@ -197,7 +197,17 @@ export class GraphReal implements ClienteGraph {
   }
 
   async obterItem(itemId: string): Promise<ItemDrive> {
-    const r = await this.requisitar(`/me/drive/items/${encodeURIComponent(itemId)}`);
+    // `description` não vem por padrão numa leitura simples de driveItem — é
+    // preciso pedir explicitamente com `$select`, comportamento documentado
+    // pela própria Microsoft. Sem isto, toda leitura da cabeça devolvia
+    // descrição vazia mesmo logo depois de um PATCH bem-sucedido: o ponteiro
+    // parecia sumir a cada mutação seguinte, mesmo com a revisão gravada e
+    // a publicação confirmada — a causa real por trás de "Recuperação
+    // necessária" reaparecendo depois de qualquer apontamento ou importação
+    // na conta real (DECISOES.md §27).
+    const r = await this.requisitar(
+      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,folder,@microsoft.graph.downloadUrl`,
+    );
     return paraItem((await r.json()) as RespostaItem);
   }
 
