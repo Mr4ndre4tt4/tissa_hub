@@ -94,8 +94,42 @@ export function hojeLocal(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * Códigos do MSAL que têm causa conhecida e conserto claro. A mensagem explica
+ * o que fazer; o código fica visível para quem precisar relatar o problema.
+ */
+const CAUSAS_MSAL: Record<string, string> = {
+  uninitialized_public_client_application:
+    'A biblioteca de autenticação foi usada antes de terminar de iniciar. Recarregue a página e tente de novo.',
+  interaction_in_progress:
+    'Há um login em andamento nesta aba. Recarregue a página e tente de novo.',
+  redirect_uri_mismatch:
+    'O endereço de retorno não confere com o cadastrado no registro do aplicativo. Ele precisa ser exatamente ' +
+    'https://mr4ndre4tt4.github.io/tissa_hub/ — com a barra final — e estar na plataforma "Single-page application".',
+  invalid_client:
+    'O client ID não foi reconhecido. Confira se é o "Application (client) ID" do registro e se ele aceita contas Microsoft pessoais.',
+  unauthorized_client:
+    'O registro do aplicativo não permite este fluxo. Confirme que a plataforma cadastrada é "Single-page application", não "Web".',
+  user_cancelled: 'O login foi cancelado na tela da Microsoft.',
+  access_denied: 'O consentimento foi recusado na tela da Microsoft. Sem ele o aplicativo não acessa a pasta no OneDrive.',
+  consent_required: 'É preciso conceder o consentimento na tela da Microsoft para o aplicativo usar a própria pasta no seu OneDrive.',
+  popup_window_error: 'O navegador bloqueou a janela de autenticação.',
+};
+
 /** Traduz falhas técnicas em português, sem expor exceção bruta (secção 4.10). */
 function explicar(e: unknown): string {
+  // Erros do MSAL trazem `errorCode`: é a informação que identifica a causa.
+  const codigo = (e as { errorCode?: unknown })?.errorCode;
+  if (typeof codigo === 'string' && codigo.length > 0) {
+    const conhecida = CAUSAS_MSAL[codigo];
+    const bruta = (e as { errorMessage?: unknown }).errorMessage;
+    const detalhe = typeof bruta === 'string' && bruta.length > 0 ? bruta : '';
+    // O código sempre aparece, para poder ser relatado sem ambiguidade.
+    return conhecida
+      ? `${conhecida} (código: ${codigo})`
+      : `Falha na autenticação Microsoft — código: ${codigo}.${detalhe ? ` ${detalhe}` : ''}`;
+  }
+
   if (e instanceof RecuperacaoNecessaria) {
     return `${e.message} Nenhuma base foi recriada: use a recuperação para escolher uma revisão.`;
   }

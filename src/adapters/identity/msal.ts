@@ -1,11 +1,10 @@
 /**
  * Autenticação Microsoft pessoal via MSAL Browser.
  *
- * ATENÇÃO — estado de verificação: implementado e compilado, **nunca executado
- * contra o Microsoft Entra real**, porque o client ID e o redirect URI ainda
- * não foram fornecidos. Sem configuração, o aplicativo exibe "Integração
- * Microsoft não configurada" e oferece o modo demonstrativo separado — nunca
- * finge uma conexão (secção 15.1).
+ * ATENÇÃO — estado de verificação: o client ID já está configurado, mas o fluxo
+ * contra o Microsoft Entra real **ainda não foi confirmado ponta a ponta**. Sem
+ * configuração, o aplicativo exibe "Integração Microsoft não configurada" e
+ * oferece o modo demonstrativo separado — nunca finge uma conexão (secção 15.1).
  *
  * Decisões aplicadas:
  *  - Authorization Code com PKCE, via MSAL; sem client secret no navegador e
@@ -66,46 +65,70 @@ export class IntegracaoNaoConfigurada extends Error {
 }
 
 export class Identidade implements ProvedorDeToken {
-  private app: PublicClientApplication | null = null;
   private conta: AccountInfo | null = null;
   private escoposConsentidos = new Set<string>([ESCOPO_PASTA_DO_APP]);
+  /** Inicialização em curso. O MSAL v3 exige `initialize()` antes de tudo. */
+  private preparacao: Promise<PublicClientApplication> | null = null;
 
   constructor(private readonly config: ConfiguracaoPublica) {}
 
-  private exigirApp(): PublicClientApplication {
+  private criarApp(): PublicClientApplication {
     if (!integracaoConfigurada(this.config)) throw new IntegracaoNaoConfigurada();
-    if (!this.app) {
-      const configuracao: Configuration = {
-        auth: {
-          clientId: this.config.clientId!,
-          authority: this.config.authority,
-          redirectUri: this.config.redirectUri!,
-          // Sem client secret no navegador; o PKCE é aplicado pelo MSAL.
-          navigateToLoginRequestUrl: true,
+    const configuracao: Configuration = {
+      auth: {
+        clientId: this.config.clientId!,
+        authority: this.config.authority,
+        redirectUri: this.config.redirectUri!,
+        // Sem client secret no navegador; o PKCE é aplicado pelo MSAL.
+        //
+        // `false` porque a aplicação roteia por hash: deixar o MSAL renavegar
+        // para a URL original depois do retorno embaralha o fragmento e é uma
+        // fonte conhecida de laço de redirecionamento em SPA com hash.
+        navigateToLoginRequestUrl: false,
+      },
+      cache: {
+        // Memória por padrão; apenas o estado transitório do redirecionamento
+        // usa sessionStorage. Nenhum token vai para localStorage.
+        cacheLocation: 'memoryStorage',
+        temporaryCacheLocation: 'sessionStorage',
+        storeAuthStateInCookie: false,
+      },
+      system: {
+        loggerOptions: {
+          // Nenhum dado pessoal (nem token) é registrado.
+          piiLoggingEnabled: false,
+          loggerCallback: () => undefined,
         },
-        cache: {
-          // Memória por padrão; apenas o estado transitório do redirecionamento
-          // usa sessionStorage. Nenhum token vai para localStorage.
-          cacheLocation: 'memoryStorage',
-          temporaryCacheLocation: 'sessionStorage',
-          storeAuthStateInCookie: false,
-        },
-        system: {
-          loggerOptions: {
-            // Nenhum dado pessoal (nem token) é registrado.
-            piiLoggingEnabled: false,
-            loggerCallback: () => undefined,
-          },
-        },
-      };
-      this.app = new PublicClientApplication(configuracao);
+      },
+    };
+    return new PublicClientApplication(configuracao);
+  }
+
+  /**
+   * Devolve a instância já inicializada. Idempotente e seguro para concorrência:
+   * qualquer método público aguarda a mesma preparação.
+   *
+   * Sem isto, chamar `loginRedirect` antes de `initialize()` falha com
+   * `uninitialized_public_client_application` — o que acontecia quando a pessoa
+   * clicava em "Entrar" antes de a inicialização terminar.
+   */
+  private async pronta(): Promise<PublicClientApplication> {
+    if (!this.preparacao) {
+      this.preparacao = (async () => {
+        const app = this.criarApp();
+        await app.initialize();
+        return app;
+      })().catch((e) => {
+        // Uma falha não pode deixar a preparação travada para sempre.
+        this.preparacao = null;
+        throw e;
+      });
     }
-    return this.app;
+    return this.preparacao;
   }
 
   async iniciar(): Promise<AccountInfo | null> {
-    const app = this.exigirApp();
-    await app.initialize();
+    const app = await this.pronta();
     const resultado = await app.handleRedirectPromise();
     if (resultado?.account) this.conta = resultado.account;
     else this.conta = app.getActiveAccount() ?? app.getAllAccounts()[0] ?? null;
@@ -114,7 +137,7 @@ export class Identidade implements ProvedorDeToken {
   }
 
   async entrar(): Promise<void> {
-    const app = this.exigirApp();
+    const app = await this.pronta();
     await app.loginRedirect({ scopes: [...this.escoposConsentidos], prompt: 'select_account' });
   }
 
@@ -124,13 +147,13 @@ export class Identidade implements ProvedorDeToken {
    * permissão exclusiva daquele único arquivo (secção 15.3).
    */
   async consentirLeituraExterna(): Promise<void> {
-    const app = this.exigirApp();
+    const app = await this.pronta();
     this.escoposConsentidos.add(ESCOPO_LEITURA_EXTERNA);
     await app.acquireTokenRedirect({ scopes: [ESCOPO_LEITURA_EXTERNA] });
   }
 
   async obterToken(): Promise<string> {
-    const app = this.exigirApp();
+    const app = await this.pronta();
     if (!this.conta) throw new Error('Não há conta Microsoft ativa. Entre novamente.');
     try {
       const r = await app.acquireTokenSilent({ scopes: [...this.escoposConsentidos], account: this.conta });
@@ -157,7 +180,7 @@ export class Identidade implements ProvedorDeToken {
 
   /** Sair limpa a memória e o estado local antes de qualquer outra conta entrar. */
   async sair(): Promise<void> {
-    const app = this.exigirApp();
+    const app = await this.pronta();
     const conta = this.conta;
     this.conta = null;
     this.escoposConsentidos = new Set([ESCOPO_PASTA_DO_APP]);
