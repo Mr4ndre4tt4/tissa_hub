@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useApp, usarMensagemDeGravacao } from './estado';
+import { useApp, usarMensagemDeGravacao, type ModoDeOperacao } from './estado';
 import { Aviso, EstadoVazio, Painel } from '../design/componentes';
 import { integracaoConfigurada } from '../adapters/identity/msal';
 import { MeuDia } from '../features/day/MeuDia';
@@ -48,6 +48,19 @@ function lerRota(): Rota {
   return conhecida ? ({ tela: conhecida.chave } as Rota) : { tela: 'entrada' };
 }
 
+/**
+ * Verdadeiro quando a tela de login deve aparecer, mesmo com a rota em
+ * "entrada" — que é tanto o estado antes de logar quanto o padrão sem hash
+ * específico (inclusive logo depois de uma recuperação bem-sucedida, secção
+ * 16.3, já conectada). Extraída como função pura porque o projeto não tem
+ * infraestrutura de teste de componente React: um bug real aqui (recuperação
+ * bem-sucedida devolvendo a pessoa para "Entrar com Microsoft", mesmo com a
+ * base já aberta) só foi pego manualmente, contra a conta real.
+ */
+export function deveMostrarEntrada(modo: ModoDeOperacao, rotaTela: Rota['tela']): boolean {
+  return rotaTela === 'entrada' && modo !== 'conectado' && modo !== 'demonstrativo';
+}
+
 export function App() {
   const { modo, conta } = useApp();
   const [rota, setRota] = useState<Rota>(lerRota);
@@ -68,7 +81,9 @@ export function App() {
   if (modo === 'conectando') return <Conectando />;
   if (modo === 'sem_base') return <EscolherBase />;
   if (modo === 'recuperacao') return <Recuperacao />;
-  if (rota.tela === 'entrada') return <Entrada aoEntrar={() => navegar({ tela: 'dia' })} />;
+  if (deveMostrarEntrada(modo, rota.tela)) {
+    return <Entrada aoEntrar={() => navegar({ tela: 'dia' })} />;
+  }
 
   const rotuloModo =
     modo === 'conectado' ? conta?.email ?? 'OneDrive pessoal' : modo === 'demonstrativo' ? 'Modo demonstrativo' : 'Sem conexão';
@@ -85,7 +100,13 @@ export function App() {
             <a
               key={m.chave}
               href={`#/${m.chave}`}
-              aria-current={rota.tela === m.chave || (m.chave === 'chamados' && rota.tela === 'chamado') ? 'page' : undefined}
+              aria-current={
+                rota.tela === m.chave ||
+                (m.chave === 'chamados' && rota.tela === 'chamado') ||
+                (m.chave === 'dia' && rota.tela === 'entrada') // ver Tela(): "entrada" mostra Meu dia quando já conectado
+                  ? 'page'
+                  : undefined
+              }
               onClick={(e) => {
                 e.preventDefault();
                 navegar({ tela: m.chave } as Rota);
@@ -128,6 +149,9 @@ function FaixaDeEstado() {
 function Tela({ rota, navegar }: { rota: Rota; navegar: (r: Rota) => void }) {
   switch (rota.tela) {
     case 'dia':
+    // Conectada (ou em demonstração) mas ainda na rota padrão, sem hash
+    // específico — "Meu dia" é a tela inicial dentro do app já aberto.
+    case 'entrada':
       return <MeuDia />;
     case 'chamados':
       return <Chamados aoAbrir={(id) => navegar({ tela: 'chamado', id })} />;

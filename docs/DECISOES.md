@@ -779,3 +779,48 @@ que `connect-src` contém `https://*.microsoftpersonalcontent.com`, além de
 `graph.microsoft.com` e `login.microsoftonline.com` — para este domínio
 específico não voltar a desaparecer silenciosamente numa edição futura da
 política.
+
+---
+
+## 23. `App()` checava a rota antes do modo — recuperação "voltava" para o login
+
+**Decisão.** `App()` (`App.tsx`) só mostra a tela de login quando a rota é
+`entrada` **e** o modo não é `conectado` nem `demonstrativo`. A checagem virou
+uma função pura exportada, `deveMostrarEntrada(modo, rotaTela)`. Na tela
+principal, a rota `entrada` passa a renderizar `MeuDia` (como `dia`), em vez
+de nada.
+
+**Por quê — o bug real, encontrado só contra a conta real.** Depois de
+resolver CORS, CSP e confirmar que `recuperarApontandoPara()` (decisão 20)
+publicava o ponteiro com sucesso (cinco requisições, todas 200, inclusive o
+`PATCH` com `If-Match`), a pessoa continuava caindo na tela de "Entrar com
+Microsoft" depois de clicar em "Recuperar esta" — **sem nenhum erro em
+lugar nenhum**. A causa não era rede, CORS, nem sessão: a rota (`rota.tela`)
+nunca muda sozinha quando o modo muda — só muda quando alguém navega
+explicitamente (`navegar()`). Como a pessoa nunca tinha saído da rota padrão
+(`entrada`, o estado antes de logar) durante toda a recuperação, a checagem
+antiga —`if (rota.tela === 'entrada') return <Entrada />` — disparava mesmo
+com `modo === 'conectado'`, escondendo a base recém-aberta atrás da tela de
+login. A pessoa então clicava em "Entrar com Microsoft" de novo, o que
+explica as reautenticações repetidas observadas nesta investigação (decisão
+22 em diante) — não era a sessão expirando, era a própria interface mandando
+entrar de novo sem necessidade.
+
+**Como foi isolado.** Só com o Console e a aba Rede do navegador reais,
+abertos pela pessoa dona da conta, com "Preserve log" ligado: um clique
+isolado em "Recuperar esta" mostrou cinco requisições, todas 200 — nenhum
+erro, nenhuma requisição de navegação de página — e mesmo assim a tela
+seguinte foi a de login. Sem esse teste ao vivo, cada hipótese anterior
+(CORS, CSP, sessão expirada) parecia plausível; só a ausência de qualquer
+falha na rede, com o mesmo sintoma, apontou para a própria navegação da
+aplicação.
+
+**Por que uma função pura, não teste de componente.** O projeto não tem
+infraestrutura de teste de componente React (`tests/*.test.ts` testam lógica
+pura). A condição de roteamento que causou o bug foi extraída como
+`deveMostrarEntrada()`, exportada e testável sem renderizar nada.
+
+**Trava de regressão.** `tests/rota.test.ts` (novo): a tela de login aparece
+na rota `entrada` para todo modo "deslogado"; **não** aparece quando
+`conectado` ou `demonstrativo`, mesmo na rota `entrada` — o caso exato do bug
+real; nunca aparece fora da rota `entrada`, seja qual for o modo.
