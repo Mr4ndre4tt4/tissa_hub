@@ -208,7 +208,7 @@ export function explicar(e: unknown): string {
 
 export function ProvedorApp({
   children,
-  configuracao = lerConfiguracaoPublica(),
+  configuracao: configuracaoProp,
   /** Injeção para testes: substitui o repositório real. */
   repositorioDeTeste = null,
 }: {
@@ -216,6 +216,15 @@ export function ProvedorApp({
   configuracao?: ConfiguracaoPublica;
   repositorioDeTeste?: RepositorioOneDrive | null;
 }) {
+  // Um valor padrão de parâmetro (`= lerConfiguracaoPublica()`) seria
+  // reavaliado a cada render deste componente — nenhum outro código deste
+  // projeto depende disso hoje (o guard de `iniciadoRef` no efeito de login
+  // absorve o reexecutar), mas deixaria a referência de `configuracao`
+  // instável para sempre, um convite a um bug futuro em qualquer efeito ou
+  // memo que dependa dela. `useMemo` mantém a mesma referência entre renders
+  // enquanto a prop não mudar (nunca muda no app real, que não a passa).
+  const configuracao = useMemo(() => configuracaoProp ?? lerConfiguracaoPublica(), [configuracaoProp]);
+
   const [modo, setModo] = useState<ModoDeOperacao>(
     repositorioDeTeste ? 'conectado' : 'nao_configurado',
   );
@@ -434,6 +443,14 @@ export function ProvedorApp({
         resultado = await repo.salvar(operationId, operacao, (base) => mutacao(base));
       } catch (e) {
         setGravacao({ situacao: 'erro', mensagem: `${explicar(e)} Nada foi gravado.` });
+        // salvar() relê a cabeça a cada chamada: se o ponteiro sumiu ou a base
+        // parou de conferir entre uma mutação e outra, o erro chega aqui, não
+        // só no login — sem isto a mensagem manda "usar a recuperação" mas o
+        // modo continua o mesmo, e não existe tela de recuperação para ir.
+        if (e instanceof RecuperacaoNecessaria || e instanceof BaseCorrompida) {
+          setErroConexao(explicar(e));
+          setModo('recuperacao');
+        }
         return 'erro';
       }
 

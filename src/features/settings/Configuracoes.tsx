@@ -28,7 +28,7 @@ const ROTULO_MODO: Record<string, string> = {
 };
 const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-export function Configuracoes() {
+export function Configuracoes({ aoSair }: { aoSair: () => void }) {
   const { revisao, mutar, modo, config } = useApp();
   const [confirmarDescarte, setConfirmarDescarte] = useState(false);
 
@@ -66,6 +66,14 @@ export function Configuracoes() {
             Faltam o <strong>client ID</strong> e o <strong>redirect URI</strong> de um registro de aplicativo Microsoft com suporte a conta
             pessoal. Enquanto isso, o login está desativado e o aplicativo funciona apenas em modo demonstrativo, com dados sintéticos.
           </Aviso>
+        )}
+
+        {(modo === 'conectado' || modo === 'demonstrativo') && (
+          <div className="acoes-linha" style={{ marginTop: 'var(--e4)' }}>
+            <button type="button" className="discreto" onClick={aoSair}>
+              Sair desta conta
+            </button>
+          </div>
         )}
 
         <div className="rolagem-tabela">

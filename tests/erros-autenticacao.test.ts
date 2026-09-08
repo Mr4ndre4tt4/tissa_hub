@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
 import { explicar } from '../src/app/estado';
 import { ErroGraph } from '../src/adapters/graph/cliente';
+import { RecuperacaoNecessaria } from '../src/adapters/storage/repositorio';
 
 const CONFIG_REAL = lerConfiguracaoPublica({
   VITE_MS_CLIENT_ID: 'c38e8f4f-cb6d-48bd-b067-93f0d44b101a',
@@ -136,5 +137,16 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
 
     const falhaDeRede = new ErroGraph('A conexão falhou: Failed to fetch', 'transporte');
     expect(explicar(falhaDeRede)).toContain('Failed to fetch');
+  });
+
+  it('recuperação necessária durante uma mutação também aponta o caminho de recuperação', () => {
+    // salvar() relê a cabeça a cada mutação (não só no login): se o ponteiro
+    // sumiu entretanto, RecuperacaoNecessaria chega até aqui vinda de dentro
+    // de mutar(), não só do efeito de login — a mensagem precisa continuar
+    // dizendo para usar a recuperação (DECISOES.md §25).
+    const erro = new RecuperacaoNecessaria('O ponteiro está vazio, mas há 1 revisão(ões) gravada(s).', 1);
+    const texto = explicar(erro);
+    expect(texto).toContain('1 revisão(ões) gravada(s)');
+    expect(texto).toMatch(/use a recuperação/);
   });
 });

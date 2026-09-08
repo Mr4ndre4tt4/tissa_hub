@@ -824,3 +824,99 @@ pura). A condição de roteamento que causou o bug foi extraída como
 na rota `entrada` para todo modo "deslogado"; **não** aparece quando
 `conectado` ou `demonstrativo`, mesmo na rota `entrada` — o caso exato do bug
 real; nunca aparece fora da rota `entrada`, seja qual for o modo.
+
+---
+
+## 24. Revisão proativa depois da decisão 23 — dois pontos da mesma classe de bug
+
+**Contexto.** Pedido explícito da pessoa dona da conta depois do conserto da
+decisão 23: analisar o código de forma sistemática antes de pedir mais um
+ciclo de teste ao vivo, em vez de continuar corrigindo uma hipótese por vez.
+Revisão de `estado.tsx`, `App.tsx`, `repositorio.ts` e `msal.ts` à procura da
+mesma classe de bug (estado muda, nada na tela reflete) e de outras
+correções óbvias.
+
+**24.1 — `sair()` tinha o mesmo problema da decisão 23, na direção oposta.**
+`sair()` (`estado.tsx`) zera `modo` para `nao_configurado` mas nunca soube de
+rota — só por sorte funcionava, porque os três lugares que chamavam `sair()`
+(Escolher base, Recuperação) só eram visíveis enquanto a rota ainda não
+tinha saído de `entrada`. Isso deixaria de valer no instante em que qualquer
+botão de sair aparecesse fora desse caminho — o que a correção 24.2, abaixo,
+faz. **Correção.** `App()` passa a montar um `aoSair()` que chama `sair()` e
+navega para `entrada` na mesma ação; `EscolherBase`, `Recuperacao` e
+`Configuracoes` recebem `aoSair` por propriedade em vez de chamar `sair()`
+direto do contexto, para a navegação nunca ficar esquecida num destino novo.
+
+**24.2 — Não havia nenhuma forma de sair da conta depois de conectado.**
+`sair()` só era chamado nas telas de Escolher base e Recuperação — nenhum
+botão existia em `conectado` nem `demonstrativo`. Sessão expirada em uso
+(`traduzirErro()`, caso `nao_autorizado`, "A sessão expirou. Entre
+novamente") não tinha ação nenhuma disponível na interface para agir sobre
+o próprio aviso. **Correção.** Botão "Sair desta conta" no painel "Conta e
+permissões" de Configurações, visível para `conectado` e `demonstrativo`,
+usando o mesmo `aoSair` de 24.1.
+
+**24.3 — Referência instável de `configuracao` em `ProvedorApp`.**
+`configuracao = lerConfiguracaoPublica()` era um valor padrão de parâmetro:
+reavaliado a cada render, produzindo uma referência de objeto nova toda vez
+mesmo sem nada mudar (`main.tsx` nunca passa a prop). Inofensivo em produção
+hoje só porque o guard `iniciadoRef` no efeito de login absorve o reexecutar,
+mas instabiliza a dependência de qualquer `useMemo`/`useEffect` futuro que
+dependa de `configuracao`. **Correção.** `useMemo(() => configuracaoProp ??
+lerConfiguracaoPublica(), [configuracaoProp])` — mesma referência entre
+renders enquanto a prop não mudar.
+
+**Por que sem teste de componente para 24.1/24.2.** Mesma limitação da
+decisão 23: sem infraestrutura de teste de componente React, a garantia
+central (`deveMostrarEntrada('nao_configurado', 'entrada') === true`) já
+está coberta por `tests/rota.test.ts`; o que muda aqui é só a certeza de que
+`aoSair()` sempre navega para `entrada` antes de `sair()` completar — uma
+propriedade de fiação entre componentes, não de lógica pura.
+
+**Verificação.** `npx tsc -b`, `npm test` (259 testes, nenhum novo — nenhuma
+lógica pura nova a testar) e `npm run build` passam depois das três
+correções.
+
+---
+
+## 25. `RecuperacaoNecessaria` numa mutação prendia a pessoa sem saída — achado ao vivo
+
+**O bug real, contra a conta real.** Depois da revisão da decisão 24, a
+pessoa tentou uma importação em Importações e viu o aviso "O ponteiro está
+vazio, mas há 1 revisão(ões) gravada(s)... Nenhuma base foi recriada: use a
+recuperação para escolher uma revisão." — mas continuou na própria tela de
+Importações, sem nenhum jeito de "entrar em recuperação" como a mensagem
+mandava. A causa: `salvar()` (`repositorio.ts`) relê a cabeça a cada
+mutação, não só no login — `carregarRevisaoAtiva()` pode descobrir o
+ponteiro vazio a qualquer momento, não só na conexão inicial. Como
+`RecuperacaoNecessaria` **não** é um `ErroGraph`, `salvar()` só a
+repassava (`if (e instanceof ErroGraph) return this.traduzirErro(e); throw
+e;`), e o `catch` de `mutar()` (`estado.tsx`) tratava qualquer coisa que
+chegasse ali como um erro de gravação genérico — `setGravacao({ situacao:
+'erro', ... })` — sem nunca tocar em `modo`. Os dois outros lugares que já
+chamam `carregarRevisaoAtiva()` (o efeito de login e `recarregar()`) sempre
+souberam trocar `modo` para `'recuperacao'` quando isso acontece; só o
+caminho de mutação, aberto pela decisão 20 (recuperação manual) e nunca
+revisado depois, não sabia.
+
+**Por que a revisão da decisão 24 não pegou isto.** A revisão foi guiada
+pela mesma classe de bug (rota não acompanha modo), mas olhou para onde
+`modo` muda e a tela não acompanha — não para onde uma exceção conhecida
+(`RecuperacaoNecessaria`, já tratada em dois lugares) deixa de ser tratada
+num terceiro. Só apareceu contra a conta real, com uma base que já estava
+nesse estado (ponteiro vazio, uma revisão órfã) antes desta sessão.
+
+**Correção.** No `catch` de `mutar()`, além de gravar o erro, `e instanceof
+RecuperacaoNecessaria || e instanceof BaseCorrompida` agora também chama
+`setErroConexao(explicar(e))` e `setModo('recuperacao')` — mesmo tratamento
+já aplicado no login e em `recarregar()`. `App()` intercepta `modo ===
+'recuperacao'` antes de qualquer rota (decisão 23), então a tela de
+Recuperação (com a listagem real de revisões e o botão "Recuperar esta")
+substitui a tela onde a mutação falhou, em vez de deixar um aviso sem ação
+possível.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts`: `explicar()`
+continua orientando para a recuperação quando recebe `RecuperacaoNecessaria`
+— a mesma mensagem que motivou a correção. O acoplamento entre essa
+exceção e `setModo('recuperacao')` em `mutar()` não tem teste de componente,
+pela mesma limitação das decisões 23 e 24.
