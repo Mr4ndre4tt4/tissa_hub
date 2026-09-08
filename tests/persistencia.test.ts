@@ -88,6 +88,59 @@ describe('secção 16.3 — inicialização', () => {
   });
 });
 
+describe('recuperarApontandoPara — recuperação manual (secção 16.3)', () => {
+  it('aponta a base para a revisão escolhida quando o ponteiro está vazio', async () => {
+    const graph = new GraphSimulado();
+    const { repo } = await baseInicializada(graph);
+    await repo.salvar('op-1', 'x', acrescentar(30));
+    const revisaoOriginal = (await repo.carregarRevisaoAtiva()).revisao!;
+
+    // Alguém limpou a descrição da pasta por fora — mesmo cenário do AC-065.
+    const { item, ponteiro: ponteiroAntes } = await repo.lerCabeca();
+    await graph.atualizarDescricao(item.id, '', item.eTag);
+    await expect(repo.carregarRevisaoAtiva()).rejects.toBeInstanceOf(RecuperacaoNecessaria);
+
+    const r = await repo.recuperarApontandoPara(ponteiroAntes!.itemId);
+    expect(r.estado).toBe('confirmado');
+    expect((r as { revisao: Revision }).revisao.revisionId).toBe(revisaoOriginal.revisionId);
+
+    const { revisao: ativa } = await repo.carregarRevisaoAtiva();
+    expect(ativa!.revisionId).toBe(revisaoOriginal.revisionId);
+    expect(ativa!.timeEntries).toHaveLength(1);
+  });
+
+  it('recusa sobrescrever um ponteiro que já é válido', async () => {
+    const graph = new GraphSimulado();
+    const { repo } = await baseInicializada(graph);
+    const { ponteiro } = await repo.lerCabeca();
+
+    // O ponteiro nunca foi apagado desta vez.
+    const r = await repo.recuperarApontandoPara(ponteiro!.itemId);
+    expect(r.estado).toBe('conflito');
+    expect((r as { detalhe: string }).detalhe).toMatch(/já tinha um ponteiro válido/i);
+  });
+
+  it('recusa recuperar uma revisão gravada por outra conta', async () => {
+    const graph = new GraphSimulado();
+    const { repo, graph: g } = await baseInicializada(graph, 'conta-a');
+    const estrutura = await repo.inicializar();
+
+    // Revisão "de outra conta", gravada diretamente no Graph (simula um
+    // arquivo que acabou nessa pasta por engano ou má-fé).
+    const base = revisaoInicial(novoWorkspace('Outra'));
+    const deOutraConta: Revision = { ...base, workspace: { ...base.workspace, contaHomeId: 'conta-b' } };
+    const bytes = new TextEncoder().encode(JSON.stringify(deOutraConta));
+    const item = await g.enviarConteudo(estrutura.revisoesId, 'rev-outra-conta.json', bytes);
+
+    const { item: cabeca } = await repo.lerCabeca();
+    await g.atualizarDescricao(cabeca.id, '', cabeca.eTag);
+
+    const r = await repo.recuperarApontandoPara(item.id);
+    expect(r.estado).toBe('erro');
+    expect((r as { detalhe: string }).detalhe).toMatch(/outra conta/i);
+  });
+});
+
 describe('AC-061 — duas sessões disputando a publicação', () => {
   it('cem disputas a partir do mesmo eTag: um vencedor por base, nenhum recibo perdido', async () => {
     const graph = new GraphSimulado();

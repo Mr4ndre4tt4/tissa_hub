@@ -78,6 +78,10 @@ export interface ContextoApp {
   criarBase: () => Promise<void>;
   /** Relê a base a partir do ponteiro remoto. */
   recarregar: () => Promise<void>;
+  /** Lista as revisões gravadas, para a pessoa escolher qual recuperar. */
+  listarRevisoesRecuperaveis: () => Promise<{ id: string; nome: string }[]>;
+  /** Aponta a base para a revisão escolhida. Escolha deliberada (secção 16.3). */
+  recuperarRevisao: (itemId: string) => Promise<void>;
 }
 
 const Contexto = createContext<ContextoApp | null>(null);
@@ -357,6 +361,39 @@ export function ProvedorApp({
     }
   }, []);
 
+  const listarRevisoesRecuperaveis = useCallback(async () => {
+    const repo = repositorioRef.current;
+    if (!repo) return [];
+    const itens = await repo.listarRevisoes();
+    return itens.map((i) => ({ id: i.id, nome: i.nome }));
+  }, []);
+
+  const recuperarRevisao = useCallback(async (itemId: string) => {
+    const repo = repositorioRef.current;
+    if (!repo) return;
+    setErroConexao(null);
+    setProgresso('Recuperando a revisão escolhida…');
+    try {
+      const r = await repo.recuperarApontandoPara(itemId);
+      if (r.estado === 'confirmado') {
+        setRevisao(r.revisao);
+        setModo('conectado');
+        setGravacao({ situacao: 'confirmado', mensagem: 'Base recuperada a partir da revisão escolhida.' });
+      } else if (r.estado === 'conflito') {
+        // Outra sessão já publicou entretanto: abrimos a base que existe.
+        setRevisao(r.revisaoAtual);
+        setModo('conectado');
+        setGravacao({ situacao: 'confirmado', mensagem: r.detalhe });
+      } else {
+        setErroConexao('detalhe' in r ? r.detalhe : 'Não foi possível recuperar esta revisão.');
+      }
+    } catch (e) {
+      setErroConexao(explicar(e));
+    } finally {
+      setProgresso(null);
+    }
+  }, []);
+
   const entrarNoModoDemonstrativo = useCallback(() => {
     const demo = revisaoDemonstrativa();
     setRevisao(demo);
@@ -443,6 +480,8 @@ export function ProvedorApp({
       sair,
       criarBase,
       recarregar,
+      listarRevisoesRecuperaveis,
+      recuperarRevisao,
     }),
     [
       modo,
@@ -459,6 +498,8 @@ export function ProvedorApp({
       sair,
       criarBase,
       recarregar,
+      listarRevisoesRecuperaveis,
+      recuperarRevisao,
     ],
   );
 

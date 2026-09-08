@@ -582,6 +582,12 @@ bem-sucedida; toque no drive que também falha, mas a releitura de approot
 ainda é tentada; 503 retentado até dar certo; 503 persistente até desistir na
 terceira tentativa; e um erro não transitório (403) que não é retentado.
 
+**Superada pela decisão 19.** Mesmo com esta correção publicada, a conta real
+continuou devolvendo 404 em `special/approot` — a hipótese da "inicialização
+pendente" não se confirmou (ou não se resolveu no tempo testado). Um teste
+direto no Graph Explorer, feito pela pessoa dona da conta, encontrou a causa
+real: veja a decisão 19.
+
 ---
 
 ## 19. Pasta comum na raiz, não a pasta especial `special/approot`
@@ -668,8 +674,50 @@ quando a pasta já existe; 404 seguido de criação bem-sucedida pelo nome;
 de um erro real na criação (propagado, não a leitura original); e um erro
 não-404 na leitura (403) que não tenta criar nada.
 
-**Superada pela decisão 19.** Mesmo com esta correção publicada, a conta real
-continuou devolvendo 404 em `special/approot` — a hipótese da "inicialização
-pendente" não se confirmou (ou não se resolveu no tempo testado). Um teste
-direto no Graph Explorer, feito pela pessoa dona da conta, encontrou a causa
-real: veja a decisão 19.
+---
+
+## 20. Recuperação manual: escolher a revisão, não só ver o aviso
+
+**Decisão.** `RepositorioOneDrive.recuperarApontandoPara(itemId)` publica o
+ponteiro apontando direto para uma revisão já gravada, quando a cabeça está
+vazia (`RecuperacaoNecessaria`). A tela `Recuperacao` (`App.tsx`) lista as
+revisões existentes e cada uma tem seu próprio botão — a pessoa escolhe qual
+vira a base ativa.
+
+**Por quê.** A criação da pasta do aplicativo (decisão 19) desbloqueou a
+conexão real pela primeira vez, e a primeira conexão real caiu direto neste
+caso: `RecuperacaoNecessaria` (ponteiro vazio, 1 revisão gravada) — sinal
+de que `criarBase()` conseguiu gravar a revisão inicial mas não chegou a
+publicar o ponteiro (a causa mais provável é a página ter recarregado no meio
+do caminho, o que a decisão 11 já documenta como encerrando a sessão). A tela
+de recuperação existia desde o início do projeto, mas só tinha "tentar de
+novo" — que relê o mesmo ponteiro vazio e cai no mesmo aviso outra vez, sem
+saída — e "sair da conta". Não havia, até agora, nenhum jeito de completar a
+recuperação que a própria mensagem de erro promete ("use a recuperação para
+escolher uma revisão").
+
+**Por que não recuperar automaticamente a mais recente.** A secção 16.3 trata
+recuperação como decisão deliberada da pessoa, não escolha automática do
+código — o mesmo princípio que já rege `criarBase()`. Com mais de uma
+revisão na pasta (histórico maior, ou duas sessões gravando por fora ao mesmo
+tempo), a mais recente pelo nome do arquivo não é necessariamente a certa.
+
+**Como o método se protege.** Mesmas garantias do resto do protocolo:
+- nunca sobrescreve um ponteiro que já é válido — se outra sessão publicou
+  entretanto, devolve `conflito` com a base atual, em vez de apagar por cima;
+- publica com `If-Match` no `eTag` da cabeça lida no início da operação — um
+  412 vira `conflito`, não repetição cega;
+- confere schema e conta antes de publicar — uma revisão de outra conta
+  Microsoft (AC-057) ou de uma versão de schema incompatível nunca vira a
+  base ativa;
+- valida invariantes antes de publicar, como qualquer outra gravação.
+
+**O que não faz.** Não cria uma revisão nova — só republica o ponteiro para
+uma que já existe. Por isso não recebe `operationId`: não há nada para tornar
+idempotente além do `If-Match` que a própria chamada já usa.
+
+**Trava de regressão.** `tests/persistencia.test.ts`, contra o Graph
+simulado: recuperação bem-sucedida a partir do mesmo cenário do AC-065
+(ponteiro limpo por fora, revisão preservada); recusa quando o ponteiro já é
+válido (conflito, nada sobrescrito); recusa quando a revisão pertence a outra
+conta.

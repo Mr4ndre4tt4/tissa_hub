@@ -233,9 +233,32 @@ function EscolherBase() {
   );
 }
 
-/** Ponteiro ausente ou base que não confere: nunca recriar por cima. */
+/**
+ * Ponteiro ausente ou base que não confere: nunca recriar por cima.
+ * Recuperar é escolher, deliberadamente, uma das revisões já gravadas
+ * (secção 16.3) — nunca uma escolha automática do aplicativo.
+ */
 function Recuperacao() {
-  const { erroConexao, recarregar, sair } = useApp();
+  const { erroConexao, recarregar, sair, listarRevisoesRecuperaveis, recuperarRevisao, progresso } = useApp();
+  const [revisoes, setRevisoes] = useState<{ id: string; nome: string }[] | null>(null);
+  const [erroListagem, setErroListagem] = useState<string | null>(null);
+  const [recuperando, setRecuperando] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    setErroListagem(null);
+    listarRevisoesRecuperaveis()
+      .then((r) => {
+        if (!cancelado) setRevisoes([...r].sort((a, b) => b.nome.localeCompare(a.nome)));
+      })
+      .catch((e) => {
+        if (!cancelado) setErroListagem(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [listarRevisoesRecuperaveis]);
+
   return (
     <Moldura>
       <Painel>
@@ -245,8 +268,37 @@ function Recuperacao() {
         </Aviso>
         <p>
           O aplicativo <strong>não</strong> vai criar uma base vazia por cima do que já existe. As revisões gravadas continuam no seu
-          OneDrive, na pasta do aplicativo, e podem ser recuperadas.
+          OneDrive, na pasta do aplicativo. Escolha qual delas vira a base ativa — nomeadas pela data e hora em que foram gravadas.
         </p>
+
+        {progresso && <Aviso tipo="informacao">{progresso}</Aviso>}
+        {erroListagem && <Aviso tipo="atencao" titulo="Não foi possível listar as revisões.">{erroListagem}</Aviso>}
+
+        {revisoes && revisoes.length > 0 && (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 'var(--e3)' }}>
+            {revisoes.map((r) => (
+              <li key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--e3)' }}>
+                <code style={{ wordBreak: 'break-all' }}>{r.nome}</code>
+                <button
+                  type="button"
+                  disabled={recuperando !== null}
+                  onClick={async () => {
+                    setRecuperando(r.id);
+                    try {
+                      await recuperarRevisao(r.id);
+                    } finally {
+                      setRecuperando(null);
+                    }
+                  }}
+                >
+                  {recuperando === r.id ? 'Recuperando…' : 'Recuperar esta'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {revisoes && revisoes.length === 0 && <p className="rodape-nota">Nenhuma revisão encontrada na pasta do aplicativo.</p>}
+
         <div className="acoes-linha">
           <button type="button" className="secundario" onClick={() => void recarregar()}>
             Tentar de novo

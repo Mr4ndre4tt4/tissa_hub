@@ -420,6 +420,81 @@ export class RepositorioOneDrive {
     return (await this.graph.filhos(revisoesId)).filter((f) => !f.pasta);
   }
 
+  /**
+   * Recuperação manual (secção 16.3): aponta a cabeça diretamente para uma
+   * revisão já gravada, quando o ponteiro está vazio mas revisões existem
+   * (`RecuperacaoNecessaria`). Escolha deliberada da pessoa — nunca automática
+   * — e nunca sobrescreve um ponteiro que já aponta para algo. Não cria
+   * revisão nova (por isso não recebe `operationId`: não há nada a tornar
+   * idempotente além do próprio `If-Match` na publicação do ponteiro).
+   */
+  async recuperarApontandoPara(itemId: string): Promise<ResultadoSalvar> {
+    const { item: itemCabeca, ponteiro } = await this.lerCabeca();
+    if (ponteiro) {
+      // Outra sessão já recuperou ou publicou entretanto: nada a sobrescrever.
+      const atual = await this.carregarRevisaoAtiva();
+      return {
+        estado: 'conflito',
+        revisaoAtual: atual.revisao!,
+        detalhe: 'A base já tinha um ponteiro válido quando a recuperação foi tentada. Nada foi sobrescrito.',
+      };
+    }
+
+    let revisao: Revision;
+    let hash: string;
+    try {
+      const bytes = await this.graph.baixarConteudo(itemId);
+      hash = await sha256Hex(bytes);
+      revisao = JSON.parse(decodificador.decode(bytes)) as Revision;
+    } catch (e) {
+      if (e instanceof ErroGraph) return this.traduzirErro(e);
+      throw e;
+    }
+
+    if (revisao.schemaVersion !== SCHEMA_VERSION) {
+      return {
+        estado: 'erro',
+        detalhe: `A revisão usa a versão de schema ${revisao.schemaVersion}, incompatível com esta versão do aplicativo.`,
+      };
+    }
+    // Uma segunda conta nunca recupera a base da primeira (AC-057).
+    if (revisao.workspace.contaHomeId !== null && revisao.workspace.contaHomeId !== this.contaHomeId) {
+      return { estado: 'erro', detalhe: 'Esta revisão pertence a outra conta Microsoft e não pode ser recuperada com a conta atual.' };
+    }
+    const problemas = validarInvariantes(revisao);
+    if (problemas.length > 0) {
+      return { estado: 'invalido', problemas: problemas.map((p) => `${p.codigo}: ${p.detalhe}`) };
+    }
+
+    let descricao: string;
+    try {
+      descricao = serializarPonteiro({ version: 1, workspaceId: revisao.workspaceId, revisionId: revisao.revisionId, itemId, sha256: hash });
+    } catch (e) {
+      return { estado: 'erro', detalhe: (e as Error).message };
+    }
+
+    try {
+      await this.graph.atualizarDescricao(itemCabeca.id, descricao, itemCabeca.eTag);
+    } catch (e) {
+      if (e instanceof ErroGraph && e.codigo === 'precondicao_falhou') {
+        const atual = await this.carregarRevisaoAtiva();
+        return {
+          estado: 'conflito',
+          revisaoAtual: atual.revisao!,
+          detalhe: 'Outra sessão publicou primeiro durante a recuperação. Nada foi sobrescrito.',
+        };
+      }
+      if (e instanceof ErroGraph) return this.traduzirErro(e);
+      throw e;
+    }
+
+    const recibo = revisao.receipts[revisao.receipts.length - 1];
+    if (!recibo) {
+      return { estado: 'erro', detalhe: 'A revisão recuperada não tem nenhum recibo registrado.' };
+    }
+    return { estado: 'confirmado', revisao, recibo };
+  }
+
   private traduzirErro(e: ErroGraph): ResultadoSalvar {
     switch (e.codigo) {
       case 'nao_autorizado':
