@@ -114,9 +114,19 @@ export class GraphReal implements ClienteGraph {
    * especial numa leitura: uma conta que nunca teve o aplicativo usado devolve
    * 404 ("Item not found") em `GET .../special/approot`, mesmo com o
    * consentimento certo e o OneDrive normal funcionando (relato confirmado
-   * contra a conta real). A documentação da Microsoft para pastas especiais é
-   * explícita: a pasta só passa a existir depois de uma **escrita** endereçada
-   * pelo caminho — daí o marcador vazio abaixo, que nunca é lido de volta.
+   * contra a conta real).
+   *
+   * A tentativa de provisionar por uma **escrita endereçada pelo caminho**
+   * (`PUT special/approot:/nome:/content`) também falhou 404 contra a conta
+   * real — inclusive com escopo `Files.ReadWrite` de todo o OneDrive, não só
+   * `Files.ReadWrite.AppFolder`. O endereçamento por caminho exige resolver
+   * `special/approot` como um item já existente antes de aplicar o restante
+   * do caminho; se a pasta nunca existiu, não há o que resolver. A
+   * documentação da Microsoft para pastas especiais cita um caminho
+   * diferente, sem dois-pontos: `POST /drive/special/approot/children` — o
+   * alias é tratado como referência de pai para criação de filho, não como um
+   * caminho a resolver, e é justamente o mecanismo desenhado para o primeiro
+   * uso.
    */
   async approot(): Promise<ItemDrive> {
     try {
@@ -130,16 +140,17 @@ export class GraphReal implements ClienteGraph {
     }
   }
 
-  /** Escreve um marcador vazio dentro da pasta do app só para provisioná-la. */
+  /** Cria uma pasta-marcador dentro da pasta do app só para provisioná-la. */
   private async provisionarPastaDoApp(): Promise<void> {
-    const caminho =
-      `/me/drive/special/approot:/.provisionamento:/content` +
-      `?@microsoft.graph.conflictBehavior=replace`;
     try {
-      await this.requisitar(caminho, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        corpoBinario: new Uint8Array(0),
+      await this.requisitar('/me/drive/special/approot/children', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: '.provisionamento',
+          folder: {},
+          '@microsoft.graph.conflictBehavior': 'fail',
+        }),
       });
     } catch (e) {
       // Outra sessão pode ter provisionado entre a leitura e esta tentativa;

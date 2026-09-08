@@ -343,7 +343,7 @@ escrita endereçada pelo caminho (`.../special/approot:/algo:/content` ou
 `.../special/approot:/children`), a pasta passa a existir e a responder ao
 `GET`.
 
-**Por que um marcador, e não a primeira pasta real (`state-head`).**
+**Por que uma pasta-marcador, e não a primeira pasta real (`state-head`).**
 `GraphReal` é a camada de transporte; não deveria saber o nome das pastas que
 `RepositorioOneDrive` decide criar (secção 4, `cliente.ts`: "a interface é
 mínima de propósito"). O marcador mantém a separação — `approot()` continua
@@ -351,10 +351,10 @@ podendo ser chamado sem nenhum conhecimento do protocolo de revisões por cima
 dele — ao custo de uma escrita a mais, feita uma única vez por conta (nas
 chamadas seguintes o `GET` já funciona).
 
-**Consequência aceita.** A primeira conexão de cada conta grava um arquivo
-`.provisionamento` vazio dentro da pasta do aplicativo, que nunca é lido de
+**Consequência aceita.** A primeira conexão de cada conta cria uma pasta
+`.provisionamento` vazia dentro da pasta do aplicativo, que nunca é lida de
 volta e não aparece na estrutura documentada (secção 3 de `OPERACAO.md`). Não
-é removido porque o contrato do Graph (`ClienteGraph`) não inclui exclusão —
+é removida porque o contrato do Graph (`ClienteGraph`) não inclui exclusão —
 adicioná-la só para isto ampliaria a interface por um caso único.
 
 **Ainda em aberto.** Só `approot()` foi exercitado contra a conta real. O
@@ -367,14 +367,25 @@ combinações: pasta já existe (nenhuma escrita), 404 seguido de provisionament
 bem-sucedido, 404 seguido de 409 (outra sessão venceu, segue normalmente), e
 404 seguido de um erro real no marcador (propagado, não engolido).
 
-**Correção parcial — ver decisão 15.** Contra a conta real, o próprio marcador
-de provisionamento também devolveu 404. A causa não era a forma da chamada
-(leitura vs. escrita, `special/approot` vs. `special/approot:/…:/content`),
-mas o escopo: com **apenas** `Files.ReadWrite.AppFolder`, nenhuma chamada
-consegue criar a pasta do zero — é uma limitação do próprio Microsoft Graph,
-não deste código. Este provisionamento continua no lugar (não faz mal em
-contas onde funciona, e evita uma leitura a mais nas contas onde a pasta já
-existe), mas sozinho não resolve o caso relatado.
+**Duas correções sucessivas — ver decisão 15.** A primeira tentativa de
+provisionar (`PUT special/approot:/.provisionamento:/content`, endereçamento
+por caminho) devolveu 404 contra a conta real — e continuou devolvendo 404
+mesmo depois do consentimento único e mais amplo da decisão 15
+(`Files.ReadWrite`, todo o OneDrive), o que descarta escopo como a causa desta
+falha específica. O que sobra é a forma do endereçamento: um caminho com
+dois-pontos precisa **resolver** `special/approot` como um item já existente
+antes de aplicar o resto do caminho — não há o que resolver numa pasta que
+nunca existiu. A implementação atual usa, em vez disso, o endpoint que a
+documentação da Microsoft cita explicitamente para este caso —
+`POST /drive/special/approot/children`, sem dois-pontos — que trata o alias
+como referência de pai para criação de filho, não como caminho a resolver.
+
+Fica em aberto se essa troca de endpoint, sozinha, já teria bastado com
+`Files.ReadWrite.AppFolder` — sem precisar do consentimento amplo da decisão
+15. O relato confirmado (issue #682) foi sobre `GET`, não sobre este `POST`
+endereçado pelo alias. A tela de bloqueio da decisão 15 continua no lugar como
+rede de segurança; o próximo relato contra a conta real vai dizer se ela ainda
+chega a aparecer.
 
 ---
 
@@ -387,18 +398,24 @@ pedir `Files.ReadWrite` (acesso a todo o OneDrive) **uma única vez**. O token
 dessa troca específica cria a pasta; o dia a dia volta a pedir só
 `Files.ReadWrite.AppFolder` depois disso.
 
-**Por quê.** A causa raiz foi confirmada contra a conta real, não é bug deste
-projeto: com apenas `Files.ReadWrite.AppFolder`, nenhuma chamada — leitura ou
-escrita — consegue criar a pasta especial do zero. É uma limitação conhecida
-do Microsoft Graph, relatada e sem resolução permanente publicada pela
-Microsoft em
-[OneDrive/onedrive-api-docs#682](https://github.com/OneDrive/onedrive-api-docs/issues/682):
-a mesma chamada que falha com 404 usando só `Files.ReadWrite.AppFolder`
-funciona com `Files.ReadWrite.All`. O workaround documentado ali —
-"pedir acesso total a cada novo usuário uma vez, depois soltar" — é
-exatamente o que este projeto implementa, com uma diferença: aqui é uma
-**decisão explícita da pessoa**, não algo pedido a todo usuário
-silenciosamente.
+**Por quê.** Não é bug deste projeto: para a leitura simples (`GET
+special/approot`), há um relato confirmado e sem resolução permanente
+publicada pela Microsoft em
+[OneDrive/onedrive-api-docs#682](https://github.com/OneDrive/onedrive-api-docs/issues/682)
+de que a mesma chamada falha com 404 usando só `Files.ReadWrite.AppFolder` e
+funciona com `Files.ReadWrite.All`. O workaround documentado ali — "pedir
+acesso total a cada novo usuário uma vez, depois soltar" — é o que este modo
+implementa, com uma diferença: aqui é uma **decisão explícita da pessoa**, não
+algo pedido a todo usuário silenciosamente.
+
+**O que ainda não está separado.** A tentativa de provisionar por escrita
+(decisão 14) falhou tanto com escopo restrito quanto — depois deste modo
+existir — com o escopo amplo, mas usando um endereçamento por caminho que a
+decisão 14 identificou depois como provavelmente errado em si (não resolve um
+item que nunca existiu, com escopo nenhum). A troca para o endpoint
+`POST .../special/approot/children` (decisão 14) pode ser suficiente sozinha,
+sem este consentimento amplo. Esta tela continua no lugar como rede de
+segurança até o próximo relato confirmar se ainda chega a aparecer.
 
 **Por que isto contraria, e depois volta a respeitar, a secção 15.1.** A
 especificação pede escopo inicial `Files.ReadWrite.AppFolder` e "não amplie".

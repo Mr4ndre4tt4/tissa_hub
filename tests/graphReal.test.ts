@@ -87,14 +87,14 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
     expect(chamadas).toEqual(['GET https://graph.microsoft.com/v1.0/me/drive/special/approot']);
   });
 
-  it('404 na primeira leitura: escreve um marcador e relê, sem deixar a pasta sem provisionar', async () => {
-    const chamadas: string[] = [];
+  it('404 na primeira leitura: cria a pasta-marcador pelo alias e relê, sem deixar a pasta sem provisionar', async () => {
+    const chamadas: { metodo: string; url: string; corpo?: unknown }[] = [];
     let leituras = 0;
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         const metodo = init?.method ?? 'GET';
-        chamadas.push(`${metodo} ${url}`);
+        chamadas.push({ metodo, url, corpo: init?.body ? JSON.parse(init.body as string) : undefined });
         if (metodo === 'GET') {
           leituras += 1;
           if (leituras === 1) {
@@ -102,8 +102,8 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
           }
           return itemResposta('approot-id-provisionado');
         }
-        // PUT do marcador de provisionamento.
-        return new Response(JSON.stringify({ id: 'marcador-id', name: '.provisionamento' }), { status: 201 });
+        // POST da pasta-marcador de provisionamento, pelo alias — sem dois-pontos.
+        return new Response(JSON.stringify({ id: 'marcador-id', name: '.provisionamento', folder: {} }), { status: 201 });
       }),
     );
 
@@ -111,11 +111,16 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
     const item = await graph.approot();
 
     expect(item.id).toBe('approot-id-provisionado');
-    expect(chamadas).toEqual([
+    expect(chamadas.map((c) => `${c.metodo} ${c.url}`)).toEqual([
       'GET https://graph.microsoft.com/v1.0/me/drive/special/approot',
-      'PUT https://graph.microsoft.com/v1.0/me/drive/special/approot:/.provisionamento:/content?@microsoft.graph.conflictBehavior=replace',
+      'POST https://graph.microsoft.com/v1.0/me/drive/special/approot/children',
       'GET https://graph.microsoft.com/v1.0/me/drive/special/approot',
     ]);
+    expect(chamadas[1]!.corpo).toMatchObject({
+      name: '.provisionamento',
+      folder: {},
+      '@microsoft.graph.conflictBehavior': 'fail',
+    });
   });
 
   it('404 seguido de conflito no marcador: outra sessão provisionou primeiro, relê normalmente', async () => {
