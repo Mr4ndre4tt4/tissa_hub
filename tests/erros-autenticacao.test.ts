@@ -150,4 +150,20 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
     expect(texto).toMatch(/movido, renomeado ou removido/);
     expect(texto).toContain('GET /me/drive/items/xyz → 404 Item not found.');
   });
+
+  it('"transporte" não pode descartar o detalhe: é o balde tanto de rede quanto de status HTTP não classificado', () => {
+    // Reproduz o relato real: um status HTTP não mapeado para nenhum outro
+    // código (por exemplo 400) cai em 'transporte' — mas a mensagem crua
+    // (método, caminho, status) continuava sendo descartada pela versão
+    // anterior desta função, escondendo exatamente o que precisava aparecer.
+    const httpNaoClassificado = new ErroGraph(
+      'POST /me/drive/special/approot/children → 400 Invalid request.',
+      'transporte',
+      400,
+    );
+    expect(explicar(httpNaoClassificado)).toContain('POST /me/drive/special/approot/children → 400 Invalid request.');
+
+    const falhaDeRede = new ErroGraph('A conexão falhou: Failed to fetch', 'transporte');
+    expect(explicar(falhaDeRede)).toContain('Failed to fetch');
+  });
 });

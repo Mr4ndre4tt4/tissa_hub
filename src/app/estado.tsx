@@ -203,7 +203,12 @@ export function explicar(e: unknown): string {
       case 'quota':
         return 'Não há espaço suficiente na conta. Nada foi gravado.';
       case 'transporte':
-        return 'A conexão falhou. Verifique a rede e tente de novo — nada foi gravado.';
+        // Balde genérico: cai aqui tanto uma falha real de rede (e.message
+        // começa com "A conexão falhou:") quanto um status HTTP não
+        // classificado nos outros casos (e.message traz método, caminho e
+        // status — ver graphReal.ts). Descartar o detalhe, como antes,
+        // escondia exatamente o que precisava aparecer num status como 400.
+        return `A conexão falhou ou a Microsoft recusou a chamada. Nada foi gravado. Detalhe: ${e.message}`;
       default:
         return e.message;
     }

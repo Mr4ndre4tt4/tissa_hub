@@ -449,3 +449,24 @@ foi confirmada contra a conta real. O restante do protocolo continua pendente.
 exata, com nenhum outro escopo do aplicativo — a mesma comparação que
 `iniciar()` usa para reconhecer o retorno — e que a operação recusa sem
 configuração, como as demais.
+
+---
+
+## 16. `explicar()` não pode descartar o detalhe também no caso `transporte`
+
+**Decisão.** O caso `'transporte'` de `explicar()` passa a incluir
+`e.message`, como os demais casos que carregam detalhe técnico.
+
+**Por quê.** `'transporte'` é o balde genérico de `traduzirStatus()`
+(`graphReal.ts`) para **qualquer** status HTTP que não caiu em nenhum dos
+outros códigos — não só falha real de rede. A tentativa seguinte de criar a
+pasta do aplicativo (decisão 14) devolveu essa mensagem genérica sem detalhe
+nenhum, escondendo justamente o que era preciso ver para saber se o novo
+`POST .../special/approot/children` (decisão 14) tinha sido rejeitado por
+outro motivo (por exemplo, nome de item começando com ponto) — o mesmo tipo de
+erro corrigido para `'nao_encontrado'` na decisão 13, mas esquecido aqui.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts` cobre as duas
+origens de `'transporte'`: um status HTTP não classificado (detalhe com
+método, caminho e status) e uma falha real de `fetch()` (detalhe começando com
+"A conexão falhou:") — as duas precisam aparecer na mensagem final.
