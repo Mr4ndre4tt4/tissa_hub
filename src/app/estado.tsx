@@ -443,6 +443,14 @@ export function ProvedorApp({
         resultado = await repo.salvar(operationId, operacao, (base) => mutacao(base));
       } catch (e) {
         setGravacao({ situacao: 'erro', mensagem: `${explicar(e)} Nada foi gravado.` });
+        // salvar() relê a cabeça a cada chamada: se o ponteiro sumiu ou a base
+        // parou de conferir entre uma mutação e outra, o erro chega aqui, não
+        // só no login — sem isto a mensagem manda "usar a recuperação" mas o
+        // modo continua o mesmo, e não existe tela de recuperação para ir.
+        if (e instanceof RecuperacaoNecessaria || e instanceof BaseCorrompida) {
+          setErroConexao(explicar(e));
+          setModo('recuperacao');
+        }
         return 'erro';
       }
 

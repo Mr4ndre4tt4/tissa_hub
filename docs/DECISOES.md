@@ -876,3 +876,47 @@ propriedade de fiação entre componentes, não de lógica pura.
 **Verificação.** `npx tsc -b`, `npm test` (259 testes, nenhum novo — nenhuma
 lógica pura nova a testar) e `npm run build` passam depois das três
 correções.
+
+---
+
+## 25. `RecuperacaoNecessaria` numa mutação prendia a pessoa sem saída — achado ao vivo
+
+**O bug real, contra a conta real.** Depois da revisão da decisão 24, a
+pessoa tentou uma importação em Importações e viu o aviso "O ponteiro está
+vazio, mas há 1 revisão(ões) gravada(s)... Nenhuma base foi recriada: use a
+recuperação para escolher uma revisão." — mas continuou na própria tela de
+Importações, sem nenhum jeito de "entrar em recuperação" como a mensagem
+mandava. A causa: `salvar()` (`repositorio.ts`) relê a cabeça a cada
+mutação, não só no login — `carregarRevisaoAtiva()` pode descobrir o
+ponteiro vazio a qualquer momento, não só na conexão inicial. Como
+`RecuperacaoNecessaria` **não** é um `ErroGraph`, `salvar()` só a
+repassava (`if (e instanceof ErroGraph) return this.traduzirErro(e); throw
+e;`), e o `catch` de `mutar()` (`estado.tsx`) tratava qualquer coisa que
+chegasse ali como um erro de gravação genérico — `setGravacao({ situacao:
+'erro', ... })` — sem nunca tocar em `modo`. Os dois outros lugares que já
+chamam `carregarRevisaoAtiva()` (o efeito de login e `recarregar()`) sempre
+souberam trocar `modo` para `'recuperacao'` quando isso acontece; só o
+caminho de mutação, aberto pela decisão 20 (recuperação manual) e nunca
+revisado depois, não sabia.
+
+**Por que a revisão da decisão 24 não pegou isto.** A revisão foi guiada
+pela mesma classe de bug (rota não acompanha modo), mas olhou para onde
+`modo` muda e a tela não acompanha — não para onde uma exceção conhecida
+(`RecuperacaoNecessaria`, já tratada em dois lugares) deixa de ser tratada
+num terceiro. Só apareceu contra a conta real, com uma base que já estava
+nesse estado (ponteiro vazio, uma revisão órfã) antes desta sessão.
+
+**Correção.** No `catch` de `mutar()`, além de gravar o erro, `e instanceof
+RecuperacaoNecessaria || e instanceof BaseCorrompida` agora também chama
+`setErroConexao(explicar(e))` e `setModo('recuperacao')` — mesmo tratamento
+já aplicado no login e em `recarregar()`. `App()` intercepta `modo ===
+'recuperacao'` antes de qualquer rota (decisão 23), então a tela de
+Recuperação (com a listagem real de revisões e o botão "Recuperar esta")
+substitui a tela onde a mutação falhou, em vez de deixar um aviso sem ação
+possível.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts`: `explicar()`
+continua orientando para a recuperação quando recebe `RecuperacaoNecessaria`
+— a mesma mensagem que motivou a correção. O acoplamento entre essa
+exceção e `setModo('recuperacao')` em `mutar()` não tem teste de componente,
+pela mesma limitação das decisões 23 e 24.
