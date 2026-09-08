@@ -85,13 +85,17 @@ export class GraphReal implements ClienteGraph {
 
     if (!resposta.ok) {
       const retryAfter = Number(resposta.headers.get('Retry-After') ?? '');
-      let detalhe = `${resposta.status} ${resposta.statusText}`;
+      let mensagem = resposta.statusText;
       try {
         const corpo = (await resposta.json()) as { error?: { message?: string } };
-        if (corpo?.error?.message) detalhe = corpo.error.message;
+        if (corpo?.error?.message) mensagem = corpo.error.message;
       } catch {
-        // Corpo sem JSON: mantemos o status como detalhe.
+        // Corpo sem JSON: mantemos o texto do status.
       }
+      // O caminho e o método vão junto: sem eles, uma mesma mensagem da
+      // Microsoft ("Item not found", por exemplo) não diz qual chamada falhou.
+      const metodo = init.method ?? 'GET';
+      const detalhe = `${metodo} ${caminho} → ${resposta.status} ${mensagem}`;
       throw new ErroGraph(detalhe, traduzirStatus(resposta.status), resposta.status, Number.isFinite(retryAfter) ? retryAfter : undefined);
     }
 

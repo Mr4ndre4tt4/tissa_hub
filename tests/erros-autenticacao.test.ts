@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
 import { explicar } from '../src/app/estado';
+import { ErroGraph } from '../src/adapters/graph/cliente';
 
 const CONFIG_REAL = lerConfiguracaoPublica({
   VITE_MS_CLIENT_ID: 'c38e8f4f-cb6d-48bd-b067-93f0d44b101a',
@@ -114,5 +115,14 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
     const texto = explicar(erro);
     expect(texto).toContain('algum_codigo_desconhecido');
     expect(texto).toContain('AADSTS50011');
+  });
+
+  it('um 404 do Graph explica a causa provável e mantém o detalhe original', () => {
+    // Reproduz "Item not found" isolado, sem dizer qual chamada falhou — o
+    // detalhe agora traz método e caminho (ver graphReal.ts).
+    const erro = new ErroGraph('GET /me/drive/special/approot → 404 Item not found.', 'nao_encontrado', 404);
+    const texto = explicar(erro);
+    expect(texto).toMatch(/OneDrive provisionado/);
+    expect(texto).toContain('GET /me/drive/special/approot → 404 Item not found.');
   });
 });

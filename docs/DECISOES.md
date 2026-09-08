@@ -289,3 +289,45 @@ redirecionamento, na troca do código por token — não é o mesmo problema que
 `.message`, e confere que ele aparece na mensagem final — junto com o
 subcódigo, quando presente, e mesmo para um `errorCode` sem causa conhecida no
 mapa.
+
+---
+
+## 13. Erros do Graph identificam qual chamada falhou
+
+**Decisão.** `GraphReal.requisitar()` (`src/adapters/graph/graphReal.ts`)
+monta o detalhe do `ErroGraph` como `MÉTODO caminho → status mensagem`, em vez
+de só repassar a mensagem que a Microsoft devolveu no corpo. `explicar()`
+ganhou um caso próprio para `nao_encontrado` (404).
+
+**Por quê.** O login passou a funcionar (decisões 11 e 12 resolveram os dois
+defeitos anteriores) e a primeira tentativa real contra o Graph devolveu
+apenas **"Item not found"** na tela — a mensagem crua de um 404 da Microsoft,
+sem dizer qual das seis ou sete chamadas de `RepositorioOneDrive.inicializar()`
+falhou (`approot`, `criarPasta` de cada pasta, `obterItem`…). Sem o caminho,
+"Item not found" é praticamente inútil para diagnosticar: pode ser a pasta do
+aplicativo, o ponteiro, uma revisão. Como o Microsoft Graph reaproveita a mesma
+mensagem genérica para itens diferentes, o texto sozinho não distingue os
+casos.
+
+**O que a explicação em `explicar()` já cobre.** A causa mais provável de um
+404 logo na primeira conexão é a conta pessoal nunca ter tido o OneDrive
+provisionado (a pessoa nunca abriu onedrive.com com essa conta) — o
+`/me/drive/special/approot` não tem uma unidade para responder. A mensagem
+diz isso, e mantém o detalhe técnico (`GET /me/drive/special/approot → 404
+…`) para quem precisar relatar com precisão.
+
+**Consequência para dados privados.** O caminho é estrutural (`/me/drive/...`,
+nomes de pasta fixos como `state-head`) — nunca contém texto de chamado nem
+identificador de trabalho, então pode aparecer na tela e em teste sem violar
+a secção 17.
+
+**Trava de regressão.** `tests/graphReal.test.ts` verifica que um 404 em
+`approot()` chega com método, caminho, status e mensagem no `ErroGraph`, e que
+um erro numa escrita (`criarPasta`) mostra `POST`, não sempre `GET`.
+`tests/erros-autenticacao.test.ts` verifica que `explicar()` traduz
+`nao_encontrado` com a hipótese de causa e preserva o detalhe original.
+
+**Ainda em aberto.** Esta é uma correção de diagnóstico, não a causa raiz
+confirmada — falta o próximo relato, já com o caminho exato, para saber se é
+mesmo falta de provisionamento do OneDrive ou outra coisa (escopo não
+consentido de fato, por exemplo).
