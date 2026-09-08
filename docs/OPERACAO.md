@@ -38,6 +38,19 @@ Valores em branco significam “entrada real ainda não fornecida”. Não preen
 com exemplo fictício: o aplicativo trata branco como não configurado e mostra a
 mensagem correta.
 
+### 1.1 `ItemNotFound` logo depois de escolher a conta
+
+O acesso à pasta do aplicativo começa por `GET /me/drive/special/approot`. Na
+primeira autorização, o Graph pode responder temporariamente `404 ItemNotFound`
+enquanto materializa essa pasta. A aplicação repete essa leitura três vezes,
+sem trocar para a raiz do drive nem ampliar a permissão concedida.
+
+Se o erro continuar, abra `https://onedrive.live.com/` com a mesma conta para
+concluir a ativação inicial do OneDrive. Depois volte à Central e tente entrar
+novamente. Uma conta sem OneDrive provisionado não possui uma pasta na qual a
+Central possa guardar a base; nesse caso o aplicativo mostra essa orientação em
+vez da mensagem técnica “Item not found”.
+
 ---
 
 ## 2. Prova técnica bloqueante (secção 16.5)
