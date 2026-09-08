@@ -107,11 +107,23 @@ continua sendo uma alternativa válida, sem mudar o destino dos dados.
 
 `.github/workflows/publicar.yml`, disparado por push em `main` ou manualmente:
 
-1. **verificar** — tipagem e os testes automáticos. Build vermelho não publica.
-2. **construir** — habilita o Pages na primeira execução, constrói com o caminho
-   base correto e **confere que o build não contém planilha, identificador de
-   chamado fora da faixa sintética nem hash de insumo privado** (AC-059).
-3. **publicar** — envia para o Pages e imprime o endereço.
+1. **tipagem e testes** — build vermelho não publica;
+2. **construir** — com o caminho base do repositório de projeto;
+3. **conferir o build** — que os assets apontam para o caminho certo (um base
+   errado deixaria o site em branco em silêncio) e que **não há planilha,
+   identificador de chamado fora da faixa sintética nem hash de insumo
+   privado** (AC-059);
+4. **publicar** — substitui o branch `gh-pages` com o conteúdo de `dist/`.
+
+**Por que pelo branch e não por "GitHub Actions".** O `GITHUB_TOKEN` não tem
+permissão para criar o site do Pages pela API — devolve "Resource not accessible
+by integration" — e a habilitação manual por "Source: GitHub Actions" não
+funcionou neste repositório. Ao publicar num branch, o GitHub habilita o Pages
+sozinho e o workflow precisa apenas de `contents: write`, sem permissão especial
+nem configuração manual.
+
+O branch `gh-pages` guarda o site, não histórico: é substituído a cada
+publicação (`push -f`). Nunca edite nada nele; a fonte é sempre `main`.
 
 ### 4.2 Sequência completa
 

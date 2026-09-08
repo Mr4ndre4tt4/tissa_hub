@@ -61,12 +61,16 @@ de trabalho ficam no OneDrive pessoal e exigem autenticação Microsoft.
 
 Endereço: **https://mr4ndre4tt4.github.io/tissa_hub/**
 
-> **Falta um passo manual, uma única vez.** O `GITHUB_TOKEN` não tem permissão
-> para criar o site do Pages, então a publicação automática só funciona depois
-> de habilitar em **Settings → Pages → Source: GitHub Actions**. Enquanto isso
-> não for feito, o workflow para com essa instrução em vez de um erro obscuro.
+A publicação usa o branch **`gh-pages`**: o workflow constrói e substitui esse
+branch, e o GitHub serve o conteúdo. Esse caminho foi escolhido porque o
+`GITHUB_TOKEN` não consegue criar o site do Pages pela API, e a habilitação por
+"Source: GitHub Actions" não funcionou neste repositório. Publicando num branch,
+o Pages se habilita sozinho e o workflow precisa apenas de `contents: write`.
 
-Depois de habilitado, a sequência para o aplicativo sair do modo demonstrativo
+O branch `gh-pages` guarda o site, não histórico: ele é substituído a cada
+publicação. Não edite nada nele — a fonte é sempre `main`.
+
+A sequência para o aplicativo sair do modo demonstrativo
 está em [`docs/OPERACAO.md`](docs/OPERACAO.md), secção 4.2: registrar o
 aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 `MS_CLIENT_ID` do repositório e republicar.

@@ -1,19 +1,26 @@
-# Publicação da interface no GitHub Pages.
+# Publicação da interface no GitHub Pages, pelo branch `gh-pages`.
 #
-# Só código e recursos públicos são publicados (secção 14.1). Os dados de
-# trabalho continuam no OneDrive pessoal da pessoa e exigem autenticação
-# Microsoft — a página ser pública não expõe nenhum chamado.
+# Por que este caminho e não a publicação por "GitHub Actions": o GITHUB_TOKEN
+# não tem permissão para criar o site do Pages ("Resource not accessible by
+# integration"), e a habilitação manual não funcionou neste repositório.
+# Publicando num branch, o GitHub habilita o Pages sozinho e o workflow só
+# precisa de `contents: write` — nenhuma permissão especial, nenhuma
+# configuração manual.
 #
-# A configuração pública (client ID, autoridade, redirect URI e endereço) vem de
-# **variáveis do repositório**, não do código. Elas não são segredos, mas também
-# não são inventadas: enquanto estiverem vazias, o aplicativo publicado exibe
-# "Integração Microsoft não configurada" e oferece apenas o modo demonstrativo.
+# Vão ao ar apenas código e recursos públicos (secção 14.1). Os dados de
+# trabalho continuam no OneDrive pessoal e exigem autenticação Microsoft: a
+# página ser pública não expõe nenhum chamado.
+#
+# A configuração pública vem de **variáveis do repositório**, não do código.
+# Elas não são segredos, mas também não são inventadas: enquanto estiverem
+# vazias, o aplicativo publicado exibe "Integração Microsoft não configurada" e
+# oferece apenas o modo demonstrativo.
 #
 # Definir em: Settings → Secrets and variables → Actions → Variables
 #   MS_CLIENT_ID     client ID do registro de aplicativo Microsoft
 #   MS_AUTHORITY     opcional; padrão é a autoridade de consumidores
-#   MS_REDIRECT_URI  precisa ser idêntico ao cadastrado no registro
-#   APP_URL          endereço público da interface
+#   MS_REDIRECT_URI  opcional; padrão é o próprio endereço publicado
+#   APP_URL          opcional; padrão é o próprio endereço publicado
 
 name: Publicar interface
 
@@ -23,17 +30,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Uma publicação por vez; não cancela a que já está em andamento.
 concurrency:
-  group: pages
+  group: publicar
   cancel-in-progress: false
 
 jobs:
-  verificar:
+  publicar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,75 +56,38 @@ jobs:
       - name: Testes
         run: npm test
 
-  construir:
-    needs: verificar
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm ci
-
-      # Tenta habilitar o Pages sozinho. O GITHUB_TOKEN normalmente NÃO tem
-      # permissão para criar o site ("Resource not accessible by integration"),
-      # então a falha aqui é tratada e explicada no passo seguinte, em vez de
-      # quebrar a execução com um erro críptico.
-      - name: Preparar o Pages
-        id: pages
-        continue-on-error: true
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Instruir quando o Pages ainda não estiver habilitado
-        if: steps.pages.outcome == 'failure'
+      - name: Definir endereço e caminho base
+        id: destino
         run: |
-          echo "::error title=GitHub Pages não está habilitado::É preciso habilitar uma única vez, à mão."
-          cat <<'FIM'
-
-          O workflow não consegue criar o site do Pages: o GITHUB_TOKEN não tem
-          permissão para isso. É uma configuração de repositório, e só precisa
-          ser feita uma vez.
-
-          Faça assim:
-            1. Settings → Pages
-            2. Em "Build and deployment", campo "Source": escolha GitHub Actions
-            3. Volte em Actions → "Publicar interface" → Run workflow
-
-          Depois disso todas as publicações passam a ser automáticas.
-          FIM
-          exit 1
+          repo="${GITHUB_REPOSITORY#*/}"
+          dono="${GITHUB_REPOSITORY%/*}"
+          dono_minusculo=$(echo "$dono" | tr '[:upper:]' '[:lower:]')
+          echo "base=/$repo/" >> "$GITHUB_OUTPUT"
+          echo "url=https://$dono_minusculo.github.io/$repo/" >> "$GITHUB_OUTPUT"
 
       - name: Construir
         env:
-          # O próprio Pages informa o caminho base: `/tissa_hub` num repositório
-          # de projeto, vazio num domínio próprio.
-          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          VITE_BASE: ${{ steps.destino.outputs.base }}
           VITE_MS_CLIENT_ID: ${{ vars.MS_CLIENT_ID }}
           VITE_MS_AUTHORITY: ${{ vars.MS_AUTHORITY || 'https://login.microsoftonline.com/consumers' }}
-          # Sem variável definida, o redirect fica igual ao endereço publicado.
-          VITE_MS_REDIRECT_URI: ${{ vars.MS_REDIRECT_URI || steps.pages.outputs.base_url }}
-          VITE_APP_URL: ${{ vars.APP_URL || steps.pages.outputs.base_url }}
+          VITE_MS_REDIRECT_URI: ${{ vars.MS_REDIRECT_URI || steps.destino.outputs.url }}
+          VITE_APP_URL: ${{ vars.APP_URL || steps.destino.outputs.url }}
         run: npm run build
 
-      # Nenhum insumo privado pode entrar no que vai ao ar (AC-059).
       - name: Conferir o build
         env:
-          BASE_ESPERADA: ${{ steps.pages.outputs.base_path }}/
+          BASE: ${{ steps.destino.outputs.base }}
         run: |
           set -e
-          # Caminho base errado quebra todos os assets em silêncio; confere no HTML.
-          if ! grep -q "src=\"${BASE_ESPERADA}assets/" dist/index.html; then
-            echo "FALHA: o index.html não referencia os assets em ${BASE_ESPERADA}assets/."
+          # Caminho base errado quebra todos os assets em silêncio.
+          if ! grep -q "src=\"${BASE}assets/" dist/index.html; then
+            echo "FALHA: o index.html não referencia os assets em ${BASE}assets/."
             grep -oE '(src|href)="[^"]*assets[^"]*"' dist/index.html || true
             exit 1
           fi
-          echo "Caminho base correto: ${BASE_ESPERADA}"
+          echo "Caminho base correto: ${BASE}"
 
+          # Nenhum insumo privado pode entrar no que vai ao ar (AC-059).
           if find dist -type f \( -name '*.xlsm' -o -name '*.xlsx' -o -name '*.csv' \) | grep -q .; then
             echo "FALHA: o build contém um arquivo de planilha."; exit 1
           fi
@@ -132,21 +99,31 @@ jobs:
           fi
           echo "Build sem dados reais."
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+      - name: Publicar no branch gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          # Impede que o Jekyll ignore arquivos do build.
+          touch dist/.nojekyll
 
-  publicar:
-    needs: construir
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          cd dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publica a interface a partir de ${GITHUB_SHA::7}"
+          # Branch de publicação é sempre substituído: guarda o site, não histórico.
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
 
       - name: Endereço publicado
         run: |
-          echo "Publicado em ${{ steps.deploy.outputs.page_url }}"
-          echo "Cadastre esse endereço como redirect URI no registro do aplicativo Microsoft."
+          echo "### Interface publicada" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.destino.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "${{ vars.MS_CLIENT_ID }}" ]; then
+            echo "A variável \`MS_CLIENT_ID\` não está definida: o aplicativo sobe em **modo demonstrativo** e não grava nada." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Integração Microsoft configurada. A prova técnica da secção 16.5 continua sendo pré-requisito para uso com dados reais." >> "$GITHUB_STEP_SUMMARY"
+          fi
