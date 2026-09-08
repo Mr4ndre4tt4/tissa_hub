@@ -920,3 +920,53 @@ continua orientando para a recuperação quando recebe `RecuperacaoNecessaria`
 — a mesma mensagem que motivou a correção. O acoplamento entre essa
 exceção e `setModo('recuperacao')` em `mutar()` não tem teste de componente,
 pela mesma limitação das decisões 23 e 24.
+
+---
+
+## 26. "Não consigo colocar o chamado" — faltava a metade de criar o provisório
+
+**O relato.** A pessoa reportou não conseguir "colocar" um chamado no
+aplicativo. Chamados.tsx nunca teve formulário de criação manual — a tela
+vazia já dizia "Importe as extrações do CS3 ou a planilha em Importações"
+— então o caminho esperado é registrar horas em Meu dia citando o chamado
+pelo campo "Chamado(s) ou atividade interna", como a própria ajuda do campo
+sugere ("Ex.: IR90000001 ; RR90000002"). Só que citar um chamado que ainda
+não veio de nenhuma extração CS3 não fazia nada visível: `aplicarApontamento()`
+(`MeuDia.tsx`) resolvia a referência contra `base.tickets` e, sem achar,
+gravava `ticketId: null` — a referência ficava órfã, o chamado nunca
+aparecia em nenhuma tela, e o apontamento parecia ter ido para lugar
+nenhum.
+
+**A metade que já existia.** O domínio já tinha tudo preparado para este
+caso: `Ticket.provisorio: boolean` ("Verdadeiro enquanto só existir
+referência pessoal, sem linha oficial"), `validarInvariantes()` já isenta
+tickets sem `sourceSystem`/`ticketType`/`sourceTicketId` da checagem de
+chave duplicada, `DetalheChamado.tsx` já tem o aviso "Referência
+provisória" pronto, e `domain/reconciliation/importacao.ts` já sabe
+completar um provisório quando a extração oficial chega, sem duplicar. Só
+faltava o lado de criar um — a decisão 20 (recuperação manual) e todo o
+resto da secção 8.5 nunca chegaram a implementar isso em `MeuDia.tsx`.
+
+**Correção.** Novo `resolverOuCriarTicket()` em `MeuDia.tsx`: procura um
+chamado existente pela referência normalizada e, não achando, cria um
+`Ticket` com `provisorio: true`, `sourceSystem/ticketType/sourceTicketId:
+null`, `oficial: null`. `aplicarApontamento()` passa a resolver todas as
+referências citadas por essa função antes de montar a revisão nova,
+acumulando os tickets criados na mesma chamada — duas citações do mesmo
+chamado no mesmo apontamento, ou uma citação repetida numa edição
+posterior, reaproveitam o mesmo `Ticket`, nunca duplicam.
+
+**Verificação.** Reproduzido ao vivo contra o modo demonstrativo (Playwright
+headless, `npm run dev`): apontar uma hora citando um chamado inexistente
+(`IR99999999`) faz o chamado aparecer em Chamados, marcado "Dados oficiais
+ainda não importados", com o apontamento vinculado corretamente em
+DetalheChamado e refletido no Dashboard ("1 referência(s) provisória(s),
+contadas à parte"); nenhum erro no console. Testadas também todas as
+outras telas (Meu dia, Dashboard, Planejamento, Importações, Meu
+desenvolvimento, Configurações) neste mesmo passe — nenhum erro de console
+ou exceção não tratada em nenhuma delas. `tests/apontamento.test.ts`
+(novo, 7 testes) cobre `resolverOuCriarTicket()` e `aplicarApontamento()`:
+criação do provisório, reaproveitamento sem duplicar (mesma citação duas
+vezes no mesmo apontamento, citação repetida numa edição, chamado já
+existente), e o caso de atividade interna sem referência não criar nada.
+`npx tsc -b`, `npm test` (267 testes) e `npm run build` passam.

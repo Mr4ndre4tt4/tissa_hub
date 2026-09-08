@@ -9,7 +9,7 @@
 import { useMemo, useState } from 'react';
 import { useApp, hojeLocal } from '../../app/estado';
 import { Aviso, Campo, ConfirmarExclusao, Dialogo, EstadoVazio, EtiquetaCelula, Indicador, Minutos, Painel } from '../../design/componentes';
-import { CELULAS, ROTULO_CELULA, type Celula, type Revision, type TimeEntry } from '../../domain/entities/tipos';
+import { CELULAS, ROTULO_CELULA, type Celula, type ReferenciaExterna, type Revision, type Ticket, type TimeEntry, type Uuid } from '../../domain/entities/tipos';
 import { contaParaJornada, ehIncompleto, saldoDoDia } from '../../domain/time/jornada';
 import { reconciliarTotais } from '../../domain/time/alocacao';
 import { rotularMinutos, textoHoraParaMinutos, validarNovaDuracao } from '../../domain/time/duracao';
@@ -231,7 +231,7 @@ export function MeuDia() {
   );
 }
 
-interface DadosFormulario {
+export interface DadosFormulario {
   workDate: string;
   descricao: string;
   duracaoTexto: string;
@@ -242,16 +242,60 @@ interface DadosFormulario {
   lancamentoExterno: boolean;
 }
 
-function aplicarApontamento(base: Revision, existente: TimeEntry | null, d: DadosFormulario, rascunho: boolean): Revision {
+/**
+ * Encontra o chamado já cadastrado para a referência ou cria um provisório
+ * (secção 8.5): horas apontadas contra um chamado que ainda não foi
+ * importado do CS3 não podem ficar órfãs — a extração oficial completa o
+ * provisório depois, sem duplicar (ver domain/reconciliation/importacao.ts,
+ * que já sabia tratar `provisorio`, mas nada nunca criava um).
+ */
+export function resolverOuCriarTicket(
+  tickets: Ticket[],
+  candidato: ReferenciaExterna,
+  workspaceId: Uuid,
+  agora: string,
+): { id: Uuid; tickets: Ticket[] } {
+  const existente = tickets.find((t) => t.referencia.normalizado === candidato.normalizado);
+  if (existente) return { id: existente.id, tickets };
+
+  const provisorio: Ticket = {
+    id: crypto.randomUUID(),
+    workspaceId,
+    sourceSystem: null,
+    ticketType: null,
+    sourceTicketId: null,
+    provisorio: true,
+    referencia: candidato,
+    oficial: null,
+    versaoFonte: null,
+    versaoFonteInstante: null,
+    proveniencia: [{ origem: 'app', observadoEm: agora, natureza: 'literal' }],
+    criadoEm: agora,
+    atualizadoEm: agora,
+    versao: 1,
+  };
+  return { id: provisorio.id, tickets: [...tickets, provisorio] };
+}
+
+export function aplicarApontamento(base: Revision, existente: TimeEntry | null, d: DadosFormulario, rascunho: boolean): Revision {
   const minutos = d.duracaoTexto.trim() === '' ? null : (textoHoraParaMinutos(d.duracaoTexto) as { ok: true; minutos: number }).minutos;
   const leitura = lerReferencia(d.referenciaBruta);
   const agora = new Date().toISOString();
+
+  let tickets = base.tickets;
+  const referencias: { candidato: ReferenciaExterna; ticketId: Uuid }[] = [];
+  for (const c of leitura.candidatos) {
+    const r = resolverOuCriarTicket(tickets, c, base.workspace.id, agora);
+    tickets = r.tickets;
+    referencias.push({ candidato: c, ticketId: r.id });
+  }
 
   const nova: Revision = {
     ...base,
     revisionId: crypto.randomUUID(),
     parentRevisionId: base.revisionId,
     criadoEm: agora,
+    tickets,
     timeEntries: [...base.timeEntries],
     timeEntryReferences: [...base.timeEntryReferences],
   };
@@ -276,13 +320,13 @@ function aplicarApontamento(base: Revision, existente: TimeEntry | null, d: Dado
         : e,
     );
     nova.timeEntryReferences = nova.timeEntryReferences.filter((r) => r.timeEntryId !== existente.id);
-    for (const c of leitura.candidatos) {
+    for (const { candidato, ticketId } of referencias) {
       nova.timeEntryReferences.push({
         id: crypto.randomUUID(),
         timeEntryId: existente.id,
-        ticketId: base.tickets.find((t) => t.referencia.normalizado === c.normalizado)?.id ?? null,
+        ticketId,
         groupId: null,
-        referencia: c,
+        referencia: candidato,
       });
     }
     return nova;
@@ -312,13 +356,13 @@ function aplicarApontamento(base: Revision, existente: TimeEntry | null, d: Dado
     motivoCancelamento: null,
     versao: 1,
   });
-  for (const c of leitura.candidatos) {
+  for (const { candidato, ticketId } of referencias) {
     nova.timeEntryReferences.push({
       id: crypto.randomUUID(),
       timeEntryId: id,
-      ticketId: base.tickets.find((t) => t.referencia.normalizado === c.normalizado)?.id ?? null,
+      ticketId,
       groupId: null,
-      referencia: c,
+      referencia: candidato,
     });
   }
   return nova;
