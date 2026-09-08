@@ -62,7 +62,7 @@ export function deveMostrarEntrada(modo: ModoDeOperacao, rotaTela: Rota['tela'])
 }
 
 export function App() {
-  const { modo, conta } = useApp();
+  const { modo, conta, sair } = useApp();
   const [rota, setRota] = useState<Rota>(lerRota);
 
   useEffect(() => {
@@ -76,11 +76,21 @@ export function App() {
     setRota(r);
   };
 
+  // `sair()` (estado.tsx) zera o modo, mas não sabe nada de rota — sem isto,
+  // sair a partir de qualquer tela que não seja "entrada" (Configurações,
+  // ou Escolher base/Recuperação com um hash preservado de outra sessão)
+  // deixaria a pessoa numa tela "conectada" com modo já desconectado, em vez
+  // de voltar para o login. Mesma classe do bug de deveMostrarEntrada.
+  const aoSair = () => {
+    void sair();
+    navegar({ tela: 'entrada' });
+  };
+
   // Enquanto a conexão está em curso, ou falta decidir sobre a base, essas
   // telas assumem: entrar no aplicativo sem base seria fingir que há dados.
   if (modo === 'conectando') return <Conectando />;
-  if (modo === 'sem_base') return <EscolherBase />;
-  if (modo === 'recuperacao') return <Recuperacao />;
+  if (modo === 'sem_base') return <EscolherBase aoSair={aoSair} />;
+  if (modo === 'recuperacao') return <Recuperacao aoSair={aoSair} />;
   if (deveMostrarEntrada(modo, rota.tela)) {
     return <Entrada aoEntrar={() => navegar({ tela: 'dia' })} />;
   }
@@ -120,7 +130,7 @@ export function App() {
 
       <main className="conteudo">
         <FaixaDeEstado />
-        <Tela rota={rota} navegar={navegar} />
+        <Tela rota={rota} navegar={navegar} aoSair={aoSair} />
       </main>
     </div>
   );
@@ -146,7 +156,7 @@ function FaixaDeEstado() {
   );
 }
 
-function Tela({ rota, navegar }: { rota: Rota; navegar: (r: Rota) => void }) {
+function Tela({ rota, navegar, aoSair }: { rota: Rota; navegar: (r: Rota) => void; aoSair: () => void }) {
   switch (rota.tela) {
     case 'dia':
     // Conectada (ou em demonstração) mas ainda na rota padrão, sem hash
@@ -167,7 +177,7 @@ function Tela({ rota, navegar }: { rota: Rota; navegar: (r: Rota) => void }) {
     case 'desenvolvimento':
       return <MeuDesenvolvimento />;
     case 'configuracoes':
-      return <Configuracoes />;
+      return <Configuracoes aoSair={aoSair} />;
     default:
       return null;
   }
@@ -206,8 +216,8 @@ function Conectando() {
  * Autenticado, pasta do aplicativo pronta, sem revisão ativa.
  * Criar a base é operação explícita — nunca automática (secção 16.3).
  */
-function EscolherBase() {
-  const { conta, criarBase, recarregar, sair, progresso, erroConexao } = useApp();
+function EscolherBase({ aoSair }: { aoSair: () => void }) {
+  const { conta, criarBase, recarregar, progresso, erroConexao } = useApp();
   const [enviando, setEnviando] = useState(false);
 
   return (
@@ -244,7 +254,7 @@ function EscolherBase() {
           <button type="button" className="secundario" disabled={enviando} onClick={() => void recarregar()}>
             Procurar de novo
           </button>
-          <button type="button" className="discreto" disabled={enviando} onClick={() => void sair()}>
+          <button type="button" className="discreto" disabled={enviando} onClick={aoSair}>
             Sair desta conta
           </button>
         </div>
@@ -262,8 +272,8 @@ function EscolherBase() {
  * Recuperar é escolher, deliberadamente, uma das revisões já gravadas
  * (secção 16.3) — nunca uma escolha automática do aplicativo.
  */
-function Recuperacao() {
-  const { erroConexao, recarregar, sair, listarRevisoesRecuperaveis, recuperarRevisao, progresso } = useApp();
+function Recuperacao({ aoSair }: { aoSair: () => void }) {
+  const { erroConexao, recarregar, listarRevisoesRecuperaveis, recuperarRevisao, progresso } = useApp();
   const [revisoes, setRevisoes] = useState<{ id: string; nome: string }[] | null>(null);
   const [erroListagem, setErroListagem] = useState<string | null>(null);
   const [recuperando, setRecuperando] = useState<string | null>(null);
@@ -327,7 +337,7 @@ function Recuperacao() {
           <button type="button" className="secundario" onClick={() => void recarregar()}>
             Tentar de novo
           </button>
-          <button type="button" className="discreto" onClick={() => void sair()}>
+          <button type="button" className="discreto" onClick={aoSair}>
             Sair desta conta
           </button>
         </div>

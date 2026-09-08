@@ -208,7 +208,7 @@ export function explicar(e: unknown): string {
 
 export function ProvedorApp({
   children,
-  configuracao = lerConfiguracaoPublica(),
+  configuracao: configuracaoProp,
   /** Injeção para testes: substitui o repositório real. */
   repositorioDeTeste = null,
 }: {
@@ -216,6 +216,15 @@ export function ProvedorApp({
   configuracao?: ConfiguracaoPublica;
   repositorioDeTeste?: RepositorioOneDrive | null;
 }) {
+  // Um valor padrão de parâmetro (`= lerConfiguracaoPublica()`) seria
+  // reavaliado a cada render deste componente — nenhum outro código deste
+  // projeto depende disso hoje (o guard de `iniciadoRef` no efeito de login
+  // absorve o reexecutar), mas deixaria a referência de `configuracao`
+  // instável para sempre, um convite a um bug futuro em qualquer efeito ou
+  // memo que dependa dela. `useMemo` mantém a mesma referência entre renders
+  // enquanto a prop não mudar (nunca muda no app real, que não a passa).
+  const configuracao = useMemo(() => configuracaoProp ?? lerConfiguracaoPublica(), [configuracaoProp]);
+
   const [modo, setModo] = useState<ModoDeOperacao>(
     repositorioDeTeste ? 'conectado' : 'nao_configurado',
   );
