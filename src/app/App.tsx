@@ -1,5 +1,5 @@
 /**
- * Composição, navegação e tela de entrada.
+ * Composição, navegação e telas de entrada/conexão.
  *
  * Navegação: Meu dia · Chamados · Dashboard · Planejamento · Importações ·
  * Meu desenvolvimento · Configurações. O detalhe do chamado abre por ID.
@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp, usarMensagemDeGravacao } from './estado';
-import { Aviso, Painel } from '../design/componentes';
+import { Aviso, EstadoVazio, Painel } from '../design/componentes';
 import { integracaoConfigurada } from '../adapters/identity/msal';
 import { MeuDia } from '../features/day/MeuDia';
 import { Chamados } from '../features/tickets/Chamados';
@@ -49,7 +49,7 @@ function lerRota(): Rota {
 }
 
 export function App() {
-  const { modo } = useApp();
+  const { modo, conta } = useApp();
   const [rota, setRota] = useState<Rota>(lerRota);
 
   useEffect(() => {
@@ -63,14 +63,22 @@ export function App() {
     setRota(r);
   };
 
+  // Enquanto a conexão está em curso, ou falta decidir sobre a base, essas
+  // telas assumem: entrar no aplicativo sem base seria fingir que há dados.
+  if (modo === 'conectando') return <Conectando />;
+  if (modo === 'sem_base') return <EscolherBase />;
+  if (modo === 'recuperacao') return <Recuperacao />;
   if (rota.tela === 'entrada') return <Entrada aoEntrar={() => navegar({ tela: 'dia' })} />;
+
+  const rotuloModo =
+    modo === 'conectado' ? conta?.email ?? 'OneDrive pessoal' : modo === 'demonstrativo' ? 'Modo demonstrativo' : 'Sem conexão';
 
   return (
     <div className="aplicacao">
       <nav className="lateral" aria-label="Navegação principal">
         <div className="assinatura">
           Central de Chamados
-          <span>{modo === 'conectado' ? 'OneDrive pessoal' : 'Modo demonstrativo'}</span>
+          <span>{rotuloModo}</span>
         </div>
         <div className="navegacao">
           {MENU.map((m) => (
@@ -98,14 +106,18 @@ export function App() {
 }
 
 function FaixaDeEstado() {
-  const { modo } = useApp();
+  const { modo, erroConexao } = useApp();
   const mensagem = usarMensagemDeGravacao();
   return (
     <>
-      {modo !== 'conectado' && (
+      {modo === 'demonstrativo' && (
         <Aviso tipo="atencao" titulo="Modo demonstrativo.">
-          {MARCA_SINTETICA} Nada é gravado no OneDrive: a integração Microsoft ainda não está configurada. Alterações ficam apenas nesta
-          sessão do navegador.
+          {MARCA_SINTETICA} Nada é gravado no OneDrive; alterações ficam apenas nesta sessão do navegador.
+        </Aviso>
+      )}
+      {erroConexao && (
+        <Aviso tipo="atencao" titulo="Problema na conexão.">
+          {erroConexao}
         </Aviso>
       )}
       {mensagem && <Aviso tipo={mensagem.tipo}>{mensagem.texto}</Aviso>}
@@ -137,22 +149,127 @@ function Tela({ rota, navegar }: { rota: Rota; navegar: (r: Rota) => void }) {
   }
 }
 
-/**
- * Tela de entrada (secção 4.1). Sem formulário próprio de senha.
- * Quando a integração não está configurada, dizemos exatamente isso — nunca
- * apresentamos um botão que finge conectar.
- */
-function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
-  const { config, entrarNoModoDemonstrativo } = useApp();
-  const configurada = integracaoConfigurada(config);
-
+function Moldura({ children }: { children: React.ReactNode }) {
   return (
     <main className="conteudo" style={{ maxWidth: 720, margin: '0 auto', paddingTop: 'var(--e7)' }}>
       <div className="assinatura" style={{ fontSize: 'var(--t-titulo)', marginBottom: 'var(--e5)' }}>
         Central de Chamados
         <span>Controle pessoal de chamados e esforço</span>
       </div>
+      {children}
+    </main>
+  );
+}
 
+function Conectando() {
+  const { progresso, conta } = useApp();
+  return (
+    <Moldura>
+      <Painel>
+        <h2>Conectando</h2>
+        <p aria-live="polite">{progresso ?? 'Aguarde…'}</p>
+        {conta && (
+          <p className="rodape-nota">
+            Conta ativa: {conta.nome} ({conta.email})
+          </p>
+        )}
+      </Painel>
+    </Moldura>
+  );
+}
+
+/**
+ * Autenticado, pasta do aplicativo pronta, sem revisão ativa.
+ * Criar a base é operação explícita — nunca automática (secção 16.3).
+ */
+function EscolherBase() {
+  const { conta, criarBase, recarregar, sair, progresso, erroConexao } = useApp();
+  const [enviando, setEnviando] = useState(false);
+
+  return (
+    <Moldura>
+      <Painel>
+        <h2>Nenhuma base encontrada nesta conta</h2>
+        <p>
+          Você está autenticado como <strong>{conta?.email}</strong> e a pasta do aplicativo já existe no seu OneDrive, mas ainda não há
+          nenhuma base de dados criada.
+        </p>
+        <p>
+          Isto é diferente de “erro de conexão”: a leitura funcionou e o resultado foi mesmo vazio. Criar a base é uma decisão sua, e não
+          acontece sozinha.
+        </p>
+
+        {erroConexao && <Aviso tipo="atencao">{erroConexao}</Aviso>}
+        {progresso && <Aviso tipo="informacao">{progresso}</Aviso>}
+
+        <div className="acoes-linha" style={{ marginTop: 'var(--e5)' }}>
+          <button
+            type="button"
+            disabled={enviando}
+            onClick={async () => {
+              setEnviando(true);
+              try {
+                await criarBase();
+              } finally {
+                setEnviando(false);
+              }
+            }}
+          >
+            {enviando ? 'Criando…' : 'Criar a base agora'}
+          </button>
+          <button type="button" className="secundario" disabled={enviando} onClick={() => void recarregar()}>
+            Procurar de novo
+          </button>
+          <button type="button" className="discreto" disabled={enviando} onClick={() => void sair()}>
+            Sair desta conta
+          </button>
+        </div>
+
+        <p className="rodape-nota">
+          A base fica na pasta do aplicativo, dentro do seu OneDrive pessoal. Nenhum dado vai para servidor deste projeto.
+        </p>
+      </Painel>
+    </Moldura>
+  );
+}
+
+/** Ponteiro ausente ou base que não confere: nunca recriar por cima. */
+function Recuperacao() {
+  const { erroConexao, recarregar, sair } = useApp();
+  return (
+    <Moldura>
+      <Painel>
+        <h2>Recuperação necessária</h2>
+        <Aviso tipo="atencao" titulo="A base não foi aberta.">
+          {erroConexao ?? 'A base existente não pôde ser validada.'}
+        </Aviso>
+        <p>
+          O aplicativo <strong>não</strong> vai criar uma base vazia por cima do que já existe. As revisões gravadas continuam no seu
+          OneDrive, na pasta do aplicativo, e podem ser recuperadas.
+        </p>
+        <div className="acoes-linha">
+          <button type="button" className="secundario" onClick={() => void recarregar()}>
+            Tentar de novo
+          </button>
+          <button type="button" className="discreto" onClick={() => void sair()}>
+            Sair desta conta
+          </button>
+        </div>
+      </Painel>
+    </Moldura>
+  );
+}
+
+/**
+ * Tela de entrada (secção 4.1). Sem formulário próprio de senha.
+ * Sem configuração, dizemos exatamente isso — nunca um botão que finge conectar.
+ */
+function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
+  const { config, entrarNoModoDemonstrativo, entrarComMicrosoft, erroConexao } = useApp();
+  const configurada = integracaoConfigurada(config);
+
+  return (
+    <Moldura>
       <Painel>
         <h2>Entrar</h2>
         <p>
@@ -160,16 +277,21 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
           não existe formulário de senha aqui: a autenticação é feita pela própria Microsoft.
         </p>
 
+        {erroConexao && <Aviso tipo="atencao" titulo="Última tentativa falhou.">{erroConexao}</Aviso>}
+
         {configurada ? (
           <>
             <div className="acoes-linha" style={{ marginTop: 'var(--e5)' }}>
-              <button type="button" onClick={aoEntrar}>
+              <button type="button" onClick={() => void entrarComMicrosoft()}>
                 Entrar com Microsoft
+              </button>
+              <button type="button" className="secundario" onClick={() => { entrarNoModoDemonstrativo(); aoEntrar(); }}>
+                Ver a demonstração
               </button>
             </div>
             <p className="rodape-nota">
-              Você será levado à tela da Microsoft e voltará para cá. Depois de autenticar, o aplicativo mostra a conta ativa e pede o
-              consentimento antes de criar ou abrir a base.
+              Você será levado à tela da Microsoft e voltará para cá. Na primeira vez será pedido o seu consentimento para o aplicativo
+              usar a própria pasta dele no seu OneDrive.
             </p>
           </>
         ) : (
@@ -180,14 +302,7 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
             </Aviso>
             <p>Você pode conhecer a interface com dados inventados, claramente separados de qualquer base real:</p>
             <div className="acoes-linha">
-              <button
-                type="button"
-                className="secundario"
-                onClick={() => {
-                  entrarNoModoDemonstrativo();
-                  aoEntrar();
-                }}
-              >
+              <button type="button" className="secundario" onClick={() => { entrarNoModoDemonstrativo(); aoEntrar(); }}>
                 Abrir o modo demonstrativo
               </button>
             </div>
@@ -200,14 +315,21 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
 
       <Painel titulo="O que ainda depende de configuração">
         <ul>
-          <li>Registro de aplicativo Microsoft com suporte a conta pessoal, client ID e redirect URI.</li>
-          <li>Consentimento da pessoa para o escopo da pasta do aplicativo.</li>
-          <li>Definição da hospedagem HTTPS e autorização para publicar.</li>
+          <li>Consentimento da sua conta para o aplicativo usar a própria pasta no OneDrive.</li>
+          <li>A prova técnica de gravação e concorrência na conta real (secção 16.5).</li>
           <li>Vínculo com a planilha no OneDrive e o fuso das extrações CS3.</li>
           <li>Regras de calendário e de follow-up, e a conciliação dos históricos.</li>
           <li>Licença e arquivo da fonte Magnetik — até lá, o fallback do sistema fica em uso e declarado.</li>
         </ul>
       </Painel>
-    </main>
+
+      {!configurada && (
+        <Painel>
+          <EstadoVazio titulo="Nada foi conectado ainda">
+            Nenhuma conta Microsoft foi autenticada e nenhum dado saiu deste navegador.
+          </EstadoVazio>
+        </Painel>
+      )}
+    </Moldura>
   );
 }

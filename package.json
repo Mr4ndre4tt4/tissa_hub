@@ -1,7 +1,7 @@
 {
   "name": "central-de-chamados",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "Central de Chamados — controle pessoal de chamados e esforço, com dados no OneDrive pessoal.",
   "scripts": {

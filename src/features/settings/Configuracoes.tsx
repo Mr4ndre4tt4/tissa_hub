@@ -16,7 +16,16 @@ import { ESCOPO_LEITURA_EXTERNA, ESCOPO_PASTA_DO_APP, integracaoConfigurada } fr
 import { MAPA_STATUS_CS3 } from '../../domain/entities/celulas';
 import { rotularMinutos } from '../../domain/time/duracao';
 
-const VERSAO_APP = '0.5.0';
+const VERSAO_APP = '0.6.0';
+
+const ROTULO_MODO: Record<string, string> = {
+  nao_configurado: 'Sem conexão',
+  demonstrativo: 'Demonstrativo (dados sintéticos, em memória)',
+  conectando: 'Conectando',
+  sem_base: 'Autenticado, sem base criada',
+  conectado: 'Conectado ao OneDrive',
+  recuperacao: 'Em recuperação',
+};
 const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 export function Configuracoes() {
@@ -46,6 +55,11 @@ export function Configuracoes() {
         {modo === 'conectado' ? (
           <Aviso tipo="conclusao" titulo="Conectado.">
             Os dados desta base ficam no OneDrive pessoal da conta autenticada.
+          </Aviso>
+        ) : integracaoConfigurada(config) ? (
+          <Aviso tipo="atencao" titulo="Sem base conectada.">
+            A integração está configurada, mas você não está com uma base aberta nesta sessão. O que for alterado aqui fica apenas no
+            navegador.
           </Aviso>
         ) : (
           <Aviso tipo="atencao" titulo="Integração Microsoft não configurada.">
@@ -302,7 +316,7 @@ export function Configuracoes() {
           <table className="densidade-compacta">
             <tbody>
               <tr><th scope="row" style={{ width: 260 }}>Versão do aplicativo</th><td>{VERSAO_APP}</td></tr>
-              <tr><th scope="row">Modo</th><td>{modo === 'conectado' ? 'Conectado ao OneDrive' : 'Demonstrativo (dados sintéticos, em memória)'}</td></tr>
+              <tr><th scope="row">Modo</th><td>{ROTULO_MODO[modo]}</td></tr>
               <tr><th scope="row">Integração configurada</th><td>{integracaoConfigurada(config) ? 'Sim' : 'Não'}</td></tr>
               <tr><th scope="row">Revisão atual</th><td><code>{revisao.revisionId}</code></td></tr>
               <tr><th scope="row">Versão do schema</th><td>{revisao.schemaVersion}</td></tr>

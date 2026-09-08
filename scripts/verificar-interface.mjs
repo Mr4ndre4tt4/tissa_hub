@@ -39,7 +39,7 @@ const navegador = await chromium.launch({ executablePath: process.env.CHROMIUM ?
 
 async function abrirDemonstracao(pagina) {
   await pagina.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-  await pagina.getByRole('button', { name: /modo demonstrativo/i }).click();
+  await pagina.getByRole('button', { name: /demonstra/i }).click();
   await pagina.waitForTimeout(300);
 }
 
