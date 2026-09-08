@@ -26,6 +26,18 @@ import type { ProvedorDeToken } from '../graph/graphReal';
 export const ESCOPO_PASTA_DO_APP = 'Files.ReadWrite.AppFolder';
 export const ESCOPO_LEITURA_EXTERNA = 'Files.Read';
 
+/**
+ * Consentimento único e explícito para uma permissão mais ampla — acesso a
+ * todo o OneDrive, não só à pasta do aplicativo. Usado apenas para destravar
+ * a criação da pasta do aplicativo quando `Files.ReadWrite.AppFolder` sozinho
+ * não consegue: limitação conhecida do Microsoft Graph (não deste código —
+ * ver DECISOES.md §15), confirmada contra a conta real e documentada em
+ * https://github.com/OneDrive/onedrive-api-docs/issues/682. Nunca entra em
+ * `escoposConsentidos`: o dia a dia do aplicativo volta a pedir só a pasta do
+ * aplicativo depois deste único uso.
+ */
+export const ESCOPO_PROVISIONAMENTO_UNICO = 'Files.ReadWrite';
+
 export interface ConfiguracaoPublica {
   clientId: string | null;
   authority: string;
@@ -152,13 +164,29 @@ export class Identidade implements ProvedorDeToken {
     return this.preparacao;
   }
 
-  async iniciar(): Promise<AccountInfo | null> {
+  /**
+   * Processa o retorno de um redirecionamento, se houver, e devolve a conta
+   * ativa. Quando o retorno é o do consentimento único de provisionamento
+   * (secção `ESCOPO_PROVISIONAMENTO_UNICO`), o token dessa troca específica
+   * também é devolvido — nenhum outro fluxo deste aplicativo pede exatamente
+   * `Files.ReadWrite` sem o sufixo `.AppFolder`, então a presença desse escopo
+   * na resposta identifica o retorno sem ambiguidade.
+   */
+  async iniciar(): Promise<{ conta: AccountInfo | null; tokenProvisionamentoUnico: string | null }> {
     const app = await this.pronta();
     const resultado = await app.handleRedirectPromise();
-    if (resultado?.account) this.conta = resultado.account;
-    else this.conta = app.getActiveAccount() ?? app.getAllAccounts()[0] ?? null;
+    let tokenProvisionamentoUnico: string | null = null;
+    if (resultado?.account) {
+      this.conta = resultado.account;
+      const escoposConcedidos = (resultado.scopes ?? []).map((s) => s.toLowerCase());
+      if (escoposConcedidos.includes(ESCOPO_PROVISIONAMENTO_UNICO.toLowerCase())) {
+        tokenProvisionamentoUnico = resultado.accessToken;
+      }
+    } else {
+      this.conta = app.getActiveAccount() ?? app.getAllAccounts()[0] ?? null;
+    }
     if (this.conta) app.setActiveAccount(this.conta);
-    return this.conta;
+    return { conta: this.conta, tokenProvisionamentoUnico };
   }
 
   async entrar(): Promise<void> {
@@ -175,6 +203,17 @@ export class Identidade implements ProvedorDeToken {
     const app = await this.pronta();
     this.escoposConsentidos.add(ESCOPO_LEITURA_EXTERNA);
     await app.acquireTokenRedirect({ scopes: [ESCOPO_LEITURA_EXTERNA] });
+  }
+
+  /**
+   * Consentimento único e explícito para destravar a criação da pasta do
+   * aplicativo (ver `ESCOPO_PROVISIONAMENTO_UNICO`). Deliberadamente **não**
+   * adiciona o escopo a `escoposConsentidos`: depois deste uso único, o
+   * aplicativo volta a pedir só a pasta do aplicativo.
+   */
+  async consentirProvisionamentoUnico(): Promise<void> {
+    const app = await this.pronta();
+    await app.acquireTokenRedirect({ scopes: [ESCOPO_PROVISIONAMENTO_UNICO], prompt: 'consent' });
   }
 
   async obterToken(): Promise<string> {

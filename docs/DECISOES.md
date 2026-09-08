@@ -366,3 +366,69 @@ confirmação. A prova técnica bloqueante da secção 16.5 permanece pendente.
 combinações: pasta já existe (nenhuma escrita), 404 seguido de provisionamento
 bem-sucedido, 404 seguido de 409 (outra sessão venceu, segue normalmente), e
 404 seguido de um erro real no marcador (propagado, não engolido).
+
+**Correção parcial — ver decisão 15.** Contra a conta real, o próprio marcador
+de provisionamento também devolveu 404. A causa não era a forma da chamada
+(leitura vs. escrita, `special/approot` vs. `special/approot:/…:/content`),
+mas o escopo: com **apenas** `Files.ReadWrite.AppFolder`, nenhuma chamada
+consegue criar a pasta do zero — é uma limitação do próprio Microsoft Graph,
+não deste código. Este provisionamento continua no lugar (não faz mal em
+contas onde funciona, e evita uma leitura a mais nas contas onde a pasta já
+existe), mas sozinho não resolve o caso relatado.
+
+---
+
+## 15. Consentimento único e mais amplo só para destravar a pasta do aplicativo
+
+**Decisão.** Quando `inicializar()` falha com 404 em `special/approot` mesmo
+depois do provisionamento (decisão 14), o aplicativo entra no modo
+`bloqueio_pasta_app` e oferece um botão explícito — nunca automático — para
+pedir `Files.ReadWrite` (acesso a todo o OneDrive) **uma única vez**. O token
+dessa troca específica cria a pasta; o dia a dia volta a pedir só
+`Files.ReadWrite.AppFolder` depois disso.
+
+**Por quê.** A causa raiz foi confirmada contra a conta real, não é bug deste
+projeto: com apenas `Files.ReadWrite.AppFolder`, nenhuma chamada — leitura ou
+escrita — consegue criar a pasta especial do zero. É uma limitação conhecida
+do Microsoft Graph, relatada e sem resolução permanente publicada pela
+Microsoft em
+[OneDrive/onedrive-api-docs#682](https://github.com/OneDrive/onedrive-api-docs/issues/682):
+a mesma chamada que falha com 404 usando só `Files.ReadWrite.AppFolder`
+funciona com `Files.ReadWrite.All`. O workaround documentado ali —
+"pedir acesso total a cada novo usuário uma vez, depois soltar" — é
+exatamente o que este projeto implementa, com uma diferença: aqui é uma
+**decisão explícita da pessoa**, não algo pedido a todo usuário
+silenciosamente.
+
+**Por que isto contraria, e depois volta a respeitar, a secção 15.1.** A
+especificação pede escopo inicial `Files.ReadWrite.AppFolder` e "não amplie".
+Ampliar por decisão própria do código, sem perguntar, teria contrariado essa
+regra diretamente. Por isso a ampliação:
+
+- nunca é automática — existe uma tela própria (`bloqueio_pasta_app` em
+  `estado.tsx` e `BloqueioPastaApp` em `App.tsx`) que explica a limitação, cita
+  a fonte, e só age depois de um clique;
+- é **transitória no código**: `consentirProvisionamentoUnico()` nunca
+  adiciona `Files.ReadWrite` a `escoposConsentidos` — nenhuma chamada
+  posterior do aplicativo volta a pedir esse escopo;
+- é **honesta sobre o limite real**: o texto da tela avisa que o consentimento
+  concedido à Microsoft continua registrado do lado deles até a própria pessoa
+  revogá-lo em `account.microsoft.com/consent` — parar de pedir o escopo no
+  código não apaga a concessão já dada.
+
+**Como o retorno é identificado.** `Identidade.iniciar()` processa o retorno
+de qualquer redirecionamento (login normal ou este consentimento único) pelo
+mesmo `handleRedirectPromise()`. Como nenhum outro fluxo deste aplicativo pede
+exatamente `Files.ReadWrite` (sem o sufixo `.AppFolder`), a presença desse
+escopo na resposta identifica o retorno sem ambiguidade — `iniciar()` passa a
+devolver `{ conta, tokenProvisionamentoUnico }`, e o token dessa troca
+específica é usado só para a chamada de criação da pasta, nunca guardado.
+
+**Consequência para a prova técnica da secção 16.5.** Só a criação da pasta
+foi confirmada contra a conta real. O restante do protocolo continua pendente.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts` confere que
+`ESCOPO_PROVISIONAMENTO_UNICO` (`Files.ReadWrite`) não coincide, por igualdade
+exata, com nenhum outro escopo do aplicativo — a mesma comparação que
+`iniciar()` usa para reconhecer o retorno — e que a operação recusa sem
+configuração, como as demais.

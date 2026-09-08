@@ -38,6 +38,17 @@ Valores em branco significam “entrada real ainda não fornecida”. Não preen
 com exemplo fictício: o aplicativo trata branco como não configurado e mostra a
 mensagem correta.
 
+> **Limitação conhecida da Microsoft, não deste aplicativo.** Com apenas
+> `Files.ReadWrite.AppFolder`, a pasta do aplicativo pode não se criar sozinha
+> na primeira conexão de uma conta — o Microsoft Graph devolve 404 mesmo com o
+> consentimento certo (relatado e sem resolução permanente publicada pela
+> Microsoft em
+> [OneDrive/onedrive-api-docs#682](https://github.com/OneDrive/onedrive-api-docs/issues/682)).
+> Quando isso acontece, a própria interface explica a situação e oferece um
+> botão para autorizar, só nessa vez, uma permissão mais ampla que cria a
+> pasta — nunca automaticamente. Depois disso o aplicativo volta a usar só
+> `Files.ReadWrite.AppFolder`. Detalhes técnicos em `DECISOES.md` §14 e §15.
+
 ---
 
 ## 2. Prova técnica bloqueante (secção 16.5)

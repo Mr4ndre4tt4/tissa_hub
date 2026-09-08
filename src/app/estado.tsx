@@ -11,6 +11,11 @@
  *  - `conectado`: base carregada do OneDrive pessoal.
  *  - `recuperacao`: há revisões gravadas sem ponteiro válido, ou a base não
  *    confere. Nunca se recria uma base vazia por cima disso.
+ *  - `bloqueio_pasta_app`: a pasta do aplicativo nunca foi criada nesta conta
+ *    e `Files.ReadWrite.AppFolder` sozinho não consegue criá-la — limitação
+ *    conhecida do Microsoft Graph, confirmada contra a conta real (ver
+ *    DECISOES.md §15). Pede consentimento único e explícito para uma
+ *    permissão mais ampla, nunca automaticamente.
  *
  * Alterar no navegador não é salvar. Toda mutação declara o seu resultado:
  * confirmado, incerto, conflito ou erro.
@@ -41,7 +46,8 @@ export type ModoDeOperacao =
   | 'conectando'
   | 'sem_base'
   | 'conectado'
-  | 'recuperacao';
+  | 'recuperacao'
+  | 'bloqueio_pasta_app';
 
 export type EstadoDeGravacao =
   | { situacao: 'ocioso' }
@@ -78,6 +84,12 @@ export interface ContextoApp {
   criarBase: () => Promise<void>;
   /** Relê a base a partir do ponteiro remoto. */
   recarregar: () => Promise<void>;
+  /**
+   * Consentimento único e explícito para uma permissão mais ampla, só para
+   * destravar a criação da pasta do aplicativo (modo `bloqueio_pasta_app`).
+   * Nunca chamado automaticamente.
+   */
+  autorizarAcessoAmploUnico: () => Promise<void>;
 }
 
 const Contexto = createContext<ContextoApp | null>(null);
@@ -230,7 +242,20 @@ export function ProvedorApp({
 
     setProgresso('Abrindo a pasta do aplicativo no OneDrive…');
     const repo = new RepositorioOneDrive(new GraphReal(identidade), homeId);
-    await repo.inicializar();
+    try {
+      await repo.inicializar();
+    } catch (e) {
+      if (e instanceof ErroGraph && e.codigo === 'nao_encontrado' && e.message.includes('special/approot')) {
+        // Limitação conhecida do Microsoft Graph (não deste código): com
+        // apenas Files.ReadWrite.AppFolder, a pasta do aplicativo nunca chega
+        // a se criar nesta conta. Pede consentimento único e explícito para
+        // uma permissão mais ampla — nunca automaticamente (ver DECISOES.md).
+        setModo('bloqueio_pasta_app');
+        setProgresso(null);
+        return;
+      }
+      throw e;
+    }
     repositorioRef.current = repo;
 
     setProgresso('Lendo a base…');
@@ -258,12 +283,31 @@ export function ProvedorApp({
       identidadeRef.current = identidade;
       try {
         setProgresso('Verificando a sessão Microsoft…');
-        const encontrada = await identidade.iniciar();
+        const { conta: encontrada, tokenProvisionamentoUnico } = await identidade.iniciar();
         if (!encontrada) {
           // Ninguém autenticado ainda: a tela de entrada assume.
           setProgresso(null);
           return;
         }
+
+        if (tokenProvisionamentoUnico) {
+          // Retorno do consentimento único e mais amplo: usa o token dessa
+          // troca específica só para destravar a pasta do aplicativo, e
+          // nunca mais — o restante do fluxo volta a pedir só a pasta do
+          // aplicativo (ver DECISOES.md §15).
+          setProgresso('Criando a pasta do aplicativo no OneDrive…');
+          try {
+            await new GraphReal({ obterToken: async () => tokenProvisionamentoUnico }).approot();
+          } catch (e) {
+            setProgresso(null);
+            setErroConexao(
+              `Mesmo com a permissão ampliada, não foi possível criar a pasta do aplicativo. ${explicar(e)}`,
+            );
+            setModo('nao_configurado');
+            return;
+          }
+        }
+
         setConta(identidade.contaAtiva());
         setModo('conectando');
         await conectar(identidade);
@@ -302,6 +346,26 @@ export function ProvedorApp({
     try {
       await identidadeRef.current?.sair();
     } catch (e) {
+      setErroConexao(explicar(e));
+    }
+  }, []);
+
+  /**
+   * Consentimento único e explícito para uma permissão mais ampla, só para
+   * destravar a criação da pasta do aplicativo (modo `bloqueio_pasta_app`).
+   * O retorno é tratado pelo efeito de login: ele reconhece esse token
+   * específico, cria a pasta, e volta a usar só a permissão da pasta do
+   * aplicativo dali em diante.
+   */
+  const autorizarAcessoAmploUnico = useCallback(async () => {
+    const identidade = identidadeRef.current;
+    if (!identidade) return;
+    setErroConexao(null);
+    try {
+      setProgresso('Levando você para a tela da Microsoft…');
+      await identidade.consentirProvisionamentoUnico();
+    } catch (e) {
+      setProgresso(null);
       setErroConexao(explicar(e));
     }
   }, []);
@@ -440,6 +504,7 @@ export function ProvedorApp({
       sair,
       criarBase,
       recarregar,
+      autorizarAcessoAmploUnico,
     }),
     [
       modo,
@@ -456,6 +521,7 @@ export function ProvedorApp({
       sair,
       criarBase,
       recarregar,
+      autorizarAcessoAmploUnico,
     ],
   );
 

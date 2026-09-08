@@ -5,7 +5,15 @@
  * (secção 4.10) — e sempre com o código, para poder ser relatado.
  */
 import { describe, expect, it } from 'vitest';
-import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
+import {
+  configuracaoMsal,
+  ESCOPO_LEITURA_EXTERNA,
+  ESCOPO_PASTA_DO_APP,
+  ESCOPO_PROVISIONAMENTO_UNICO,
+  Identidade,
+  integracaoConfigurada,
+  lerConfiguracaoPublica,
+} from '../src/adapters/identity/msal';
 import { explicar } from '../src/app/estado';
 import { ErroGraph } from '../src/adapters/graph/cliente';
 
@@ -57,6 +65,7 @@ describe('Identidade — inicialização', () => {
     const id = new Identidade(lerConfiguracaoPublica({}));
     await expect(id.entrar()).rejects.toThrow(/não configurada/i);
     await expect(id.iniciar()).rejects.toThrow(/não configurada/i);
+    await expect(id.consentirProvisionamentoUnico()).rejects.toThrow(/não configurada/i);
   });
 
   it('uma falha de preparação não trava as tentativas seguintes', async () => {
@@ -79,6 +88,21 @@ describe('Identidade — inicialização', () => {
     });
     expect(integracaoConfigurada(c)).toBe(true);
     expect(c.authority).toBe('https://login.microsoftonline.com/consumers');
+  });
+});
+
+describe('escopo de provisionamento único — identificável sem ambiguidade', () => {
+  it('não coincide, por igualdade exata, com nenhum outro escopo do aplicativo', () => {
+    // iniciar() reconhece o retorno do consentimento único comparando por
+    // igualdade exata (Set.includes) o escopo concedido a este valor. Se
+    // algum dia coincidisse com outro escopo do aplicativo, um login comum
+    // seria confundido com o retorno do provisionamento único.
+    expect(ESCOPO_PROVISIONAMENTO_UNICO).toBe('Files.ReadWrite');
+    expect(ESCOPO_PROVISIONAMENTO_UNICO).not.toBe(ESCOPO_PASTA_DO_APP);
+    expect(ESCOPO_PROVISIONAMENTO_UNICO).not.toBe(ESCOPO_LEITURA_EXTERNA);
+    // É prefixo de ESCOPO_PASTA_DO_APP, mas não igual — a comparação exata
+    // não confunde os dois mesmo assim.
+    expect(ESCOPO_PASTA_DO_APP.toLowerCase().startsWith(ESCOPO_PROVISIONAMENTO_UNICO.toLowerCase())).toBe(true);
   });
 });
 
