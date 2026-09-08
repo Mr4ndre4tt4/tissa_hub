@@ -77,6 +77,9 @@ export class RepositorioOneDrive {
     private readonly graph: ClienteGraph,
     /** Identidade da conta ativa. Uma segunda conta nunca lê esta base. */
     private readonly contaHomeId: string,
+    /** Espera injetável: permite testar a consistência eventual sem atrasos. */
+    private readonly aguardar: (milissegundos: number) => Promise<void> =
+      (milissegundos) => new Promise((resolver) => setTimeout(resolver, milissegundos)),
   ) {}
 
   /* ---------------------------------------------------------------- */
@@ -89,6 +92,34 @@ export class RepositorioOneDrive {
    * como `rename`, que produziria bases paralelas.
    */
   async inicializar(): Promise<EstruturaRemota> {
+    /*
+     * O approot pode responder antes que o Graph aceite o ID recém-criado nas
+     * operações de filhos. Nesse caso o 404 não vem de `special/approot`, mas
+     * de uma das criações/leituras logo abaixo dele. Repetimos a inicialização
+     * inteira: todas as criações usam `conflictBehavior: fail` e um conflito é
+     * conciliado pela leitura, portanto a repetição não cria bases paralelas.
+     */
+    for (let tentativa = 0; tentativa < 3; tentativa += 1) {
+      try {
+        return await this.inicializarUmaVez();
+      } catch (e) {
+        if (!(e instanceof ErroGraph) || e.codigo !== 'nao_encontrado') throw e;
+        if (tentativa === 2) {
+          throw new ErroGraph(
+            'O Microsoft Graph ainda não encontrou a estrutura da Central no OneDrive desta conta. ' +
+              'Abra https://onedrive.live.com/ com a mesma conta, aguarde a página carregar e tente entrar novamente. ' +
+              `Detalhe técnico: ${e.message}`,
+            'nao_encontrado',
+            e.status,
+          );
+        }
+        await this.aguardar(500 * 2 ** tentativa);
+      }
+    }
+    throw new Error('Falha inesperada ao inicializar a pasta do aplicativo.');
+  }
+
+  private async inicializarUmaVez(): Promise<EstruturaRemota> {
     const approot = await this.graph.approot();
 
     const obterOuCriar = async (nome: string): Promise<ItemDrive> => {

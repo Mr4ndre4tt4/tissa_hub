@@ -76,6 +76,28 @@ describe('secção 16.3 — inicialização', () => {
     expect(await repo.listarRevisoes()).toHaveLength(1);
   });
 
+  it('repete a estrutura quando o approot recém-criado ainda devolve not found nos filhos', async () => {
+    const graph = new GraphSimulado();
+    const criarOriginal = graph.criarPasta.bind(graph);
+    let falhas = 2;
+    graph.criarPasta = async (...args) => {
+      if (falhas > 0) {
+        falhas -= 1;
+        throw new ErroGraph('Item not found', 'nao_encontrado', 404);
+      }
+      return criarOriginal(...args);
+    };
+    const esperas: number[] = [];
+    const repo = new RepositorioOneDrive(graph, 'conta-a', async (ms) => { esperas.push(ms); });
+
+    const estrutura = await repo.inicializar();
+
+    expect(estrutura.headId).toBeTruthy();
+    expect(esperas).toEqual([500, 1000]);
+    const filhos = await graph.filhos(estrutura.approotId);
+    expect(filhos.map((f) => f.nome).sort()).toEqual(['candidates', 'exports', 'recovery', 'revisions', 'sources', 'state-head']);
+  });
+
   it('AC-065: cabeça vazia com revisões existentes entra em recuperação, não zera a base', async () => {
     const graph = new GraphSimulado();
     const { repo } = await baseInicializada(graph);

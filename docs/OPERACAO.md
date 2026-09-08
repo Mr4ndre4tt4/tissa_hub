@@ -42,8 +42,11 @@ mensagem correta.
 
 O acesso à pasta do aplicativo começa por `GET /me/drive/special/approot`. Na
 primeira autorização, o Graph pode responder temporariamente `404 ItemNotFound`
-enquanto materializa essa pasta. A aplicação repete essa leitura três vezes,
-sem trocar para a raiz do drive nem ampliar a permissão concedida.
+enquanto materializa essa pasta — inclusive nas primeiras operações de filhos,
+depois que o próprio `approot` já respondeu. A aplicação repete a leitura do
+`approot` e também a inicialização completa da estrutura. As operações são
+idempotentes e conflitos são relidos, portanto a retentativa não cria bases
+paralelas. Ela não troca para a raiz do drive nem amplia a permissão concedida.
 
 Se o erro continuar, abra `https://onedrive.live.com/` com a mesma conta para
 concluir a ativação inicial do OneDrive. Depois volte à Central e tente entrar
