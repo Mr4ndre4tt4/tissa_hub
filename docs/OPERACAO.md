@@ -54,6 +54,12 @@ novamente. Uma conta sem OneDrive provisionado não possui uma pasta na qual a
 Central possa guardar a base; nesse caso o aplicativo mostra essa orientação em
 vez da mensagem técnica “Item not found”.
 
+**Não crie nenhuma pasta à mão.** Ao abrir o OneDrive, basta concluir termos ou
+telas iniciais que forem apresentados e esperar a lista de arquivos aparecer.
+O Microsoft Graph cria a pasta especial vinculada à identidade do aplicativo;
+uma pasta comum chamada “Central de Chamados” não substitui esse vínculo e não
+resolveria o `ItemNotFound`.
+
 ---
 
 ## 2. Prova técnica bloqueante (secção 16.5)

@@ -108,6 +108,7 @@ export class RepositorioOneDrive {
           throw new ErroGraph(
             'O Microsoft Graph ainda não encontrou a estrutura da Central no OneDrive desta conta. ' +
               'Abra https://onedrive.live.com/ com a mesma conta, aguarde a página carregar e tente entrar novamente. ' +
+              'Não crie pastas manualmente; a Central cria a estrutura dentro da pasta especial do aplicativo. ' +
               `Detalhe técnico: ${e.message}`,
             'nao_encontrado',
             e.status,

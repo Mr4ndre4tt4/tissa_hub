@@ -286,6 +286,7 @@ function Recuperacao() {
 function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
   const { config, entrarNoModoDemonstrativo, entrarComMicrosoft, erroConexao } = useApp();
   const configurada = integracaoConfigurada(config);
+  const precisaAtivarOneDrive = erroConexao?.includes('https://onedrive.live.com/') ?? false;
 
   return (
     <Moldura>
@@ -296,7 +297,20 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
           não existe formulário de senha aqui: a autenticação é feita pela própria Microsoft.
         </p>
 
-        {erroConexao && <Aviso tipo="atencao" titulo="Última tentativa falhou.">{erroConexao}</Aviso>}
+        {erroConexao && (
+          <Aviso tipo="atencao" titulo="Última tentativa falhou.">
+            <p>{erroConexao}</p>
+            {precisaAtivarOneDrive && (
+              <p>
+                <a href="https://onedrive.live.com/" target="_blank" rel="noreferrer">
+                  Abrir o OneDrive desta conta
+                </a>
+                . Conclua a tela inicial, se aparecer, e aguarde a lista de arquivos carregar. <strong>Não crie nenhuma pasta manualmente:</strong>{' '}
+                a Microsoft cria a pasta correta para este aplicativo.
+              </p>
+            )}
+          </Aviso>
+        )}
 
         {configurada ? (
           <>

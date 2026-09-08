@@ -124,7 +124,8 @@ export class GraphReal implements ClienteGraph {
         }
         throw new ErroGraph(
           'O OneDrive desta conta ainda não disponibilizou a pasta do aplicativo. ' +
-            'Abra https://onedrive.live.com/ uma vez para concluir a ativação do OneDrive e depois volte e tente novamente.',
+            'Abra https://onedrive.live.com/ uma vez para concluir a ativação do OneDrive e depois volte e tente novamente. ' +
+            'Não crie a pasta manualmente: o Microsoft Graph precisa criá-la com a identidade correta do aplicativo.',
           'nao_encontrado',
           e.status,
         );
