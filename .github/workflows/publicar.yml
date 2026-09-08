@@ -1,11 +1,8 @@
-# Publicação da interface no GitHub Pages, pelo branch `gh-pages`.
-#
-# Por que este caminho e não a publicação por "GitHub Actions": o GITHUB_TOKEN
-# não tem permissão para criar o site do Pages ("Resource not accessible by
-# integration"), e a habilitação manual não funcionou neste repositório.
-# Publicando num branch, o GitHub habilita o Pages sozinho e o workflow só
-# precisa de `contents: write` — nenhuma permissão especial, nenhuma
-# configuração manual.
+# Publicação da interface no GitHub Pages pelo mecanismo oficial de artifacts.
+# O site já foi habilitado no repositório; não tentamos recriá-lo pela API.
+# `deploy-pages` registra o deployment, expõe a URL efetivamente publicada e
+# evita depender de um force-push num branch que pode não estar selecionado nas
+# configurações do Pages.
 #
 # Vão ao ar apenas código e recursos públicos (secção 14.1). Os dados de
 # trabalho continuam no OneDrive pessoal e exigem autenticação Microsoft: a
@@ -31,15 +28,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: publicar
+  group: pages
   cancel-in-progress: false
 
 jobs:
   publicar:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -105,28 +107,20 @@ jobs:
           fi
           echo "Build sem dados reais."
 
-      - name: Publicar no branch gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          # Impede que o Jekyll ignore arquivos do build.
-          touch dist/.nojekyll
+      - name: Empacotar site para o Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
 
-          cd dist
-          git init -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Publica a interface a partir de ${GITHUB_SHA::7}"
-          # Branch de publicação é sempre substituído: guarda o site, não histórico.
-          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+      - name: Publicar no GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
 
       - name: Endereço publicado
         run: |
           echo "### Interface publicada" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.destino.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.deploy.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [ -z "${{ vars.MS_CLIENT_ID }}" ]; then
             echo "A variável \`MS_CLIENT_ID\` não está definida: o aplicativo sobe em **modo demonstrativo** e não grava nada." >> "$GITHUB_STEP_SUMMARY"

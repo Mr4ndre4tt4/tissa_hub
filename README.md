@@ -61,14 +61,10 @@ de trabalho ficam no OneDrive pessoal e exigem autenticação Microsoft.
 
 Endereço: **https://mr4ndre4tt4.github.io/tissa_hub/**
 
-A publicação usa o branch **`gh-pages`**: o workflow constrói e substitui esse
-branch, e o GitHub serve o conteúdo. Esse caminho foi escolhido porque o
-`GITHUB_TOKEN` não consegue criar o site do Pages pela API, e a habilitação por
-"Source: GitHub Actions" não funcionou neste repositório. Publicando num branch,
-o Pages se habilita sozinho e o workflow precisa apenas de `contents: write`.
-
-O branch `gh-pages` guarda o site, não histórico: ele é substituído a cada
-publicação. Não edite nada nele — a fonte é sempre `main`.
+A publicação usa o artifact oficial do **GitHub Pages**. O workflow valida e
+constrói o site, envia `dist/` com `upload-pages-artifact` e publica com
+`deploy-pages`, que registra o deployment e informa o endereço efetivamente
+servido. A fonte continua sendo sempre o branch `main`.
 
 A sequência para o aplicativo sair do modo demonstrativo
 está em [`docs/OPERACAO.md`](docs/OPERACAO.md), secção 4.2: registrar o

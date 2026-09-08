@@ -113,17 +113,14 @@ continua sendo uma alternativa válida, sem mudar o destino dos dados.
    errado deixaria o site em branco em silêncio) e que **não há planilha,
    identificador de chamado fora da faixa sintética nem hash de insumo
    privado** (AC-059);
-4. **publicar** — substitui o branch `gh-pages` com o conteúdo de `dist/`.
+4. **publicar** — envia `dist/` como artifact e cria um deployment oficial do
+   GitHub Pages, cujo endereço fica registrado no resumo da execução.
 
-**Por que pelo branch e não por "GitHub Actions".** O `GITHUB_TOKEN` não tem
-permissão para criar o site do Pages pela API — devolve "Resource not accessible
-by integration" — e a habilitação manual por "Source: GitHub Actions" não
-funcionou neste repositório. Ao publicar num branch, o GitHub habilita o Pages
-sozinho e o workflow precisa apenas de `contents: write`, sem permissão especial
-nem configuração manual.
-
-O branch `gh-pages` guarda o site, não histórico: é substituído a cada
-publicação (`push -f`). Nunca edite nada nele; a fonte é sempre `main`.
+O site precisa estar habilitado com **Source: GitHub Actions** em Settings →
+Pages. O workflow não tenta criar o site pela API: depois de habilitado uma vez,
+usa as permissões mínimas `contents: read`, `pages: write` e `id-token: write`.
+Não há branch de build para selecionar nem `push --force`; a fonte é sempre
+`main` e cada execução publica um artifact identificado.
 
 ### 4.2 Sequência completa
 

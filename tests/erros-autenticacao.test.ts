@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
+import { deveAbrirAplicacaoAposConectar } from '../src/app/App';
 
 const CONFIG_REAL = lerConfiguracaoPublica({
   VITE_MS_CLIENT_ID: 'c38e8f4f-cb6d-48bd-b067-93f0d44b101a',
@@ -77,5 +78,14 @@ describe('Identidade — inicialização', () => {
     });
     expect(integracaoConfigurada(c)).toBe(true);
     expect(c.authority).toBe('https://login.microsoftonline.com/consumers');
+  });
+});
+
+describe('retorno do login Microsoft', () => {
+  it('abre a aplicação quando a conexão real termina na rota de entrada', () => {
+    expect(deveAbrirAplicacaoAposConectar('conectado', 'entrada')).toBe(true);
+    expect(deveAbrirAplicacaoAposConectar('conectando', 'entrada')).toBe(false);
+    expect(deveAbrirAplicacaoAposConectar('demonstrativo', 'entrada')).toBe(false);
+    expect(deveAbrirAplicacaoAposConectar('conectado', 'chamados')).toBe(false);
   });
 });
