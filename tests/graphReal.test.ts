@@ -2,20 +2,25 @@
  * `GraphReal` sobre `fetch`.
  *
  * Dois comportamentos cobertos:
- *  - um erro HTTP traz método e caminho junto da mensagem da Microsoft, para
- *    duas chamadas que falham com a mesma mensagem genérica (por exemplo
- *    "Item not found") não ficarem indistinguíveis na tela — foi exatamente o
- *    caso relatado no login real;
- *  - `approot()` provisiona a pasta do aplicativo quando ela ainda não existe.
- *    Confirmado contra a conta real: OneDrive pessoal devolve 404 numa
- *    simples leitura da pasta especial antes de qualquer escrita nela, mesmo
- *    com o consentimento certo e o OneDrive normal funcionando.
+ *  - um erro HTTP traz método, caminho, código e `innerError` junto da
+ *    mensagem da Microsoft — mensagens rasas ("Item not found", "Invalid
+ *    request.") já esconderam a causa demais vezes neste projeto para
+ *    descartar qualquer parte do corpo do erro;
+ *  - `approot()`, ao encontrar 404 na primeira leitura, toca o drive padrão e
+ *    tenta de novo, com retentativa curta só para 503. Duas tentativas de
+ *    provisionar por escrita (`PUT .../content` endereçado por caminho,
+ *    `POST .../children` pelo alias) já foram testadas e descartadas contra
+ *    a conta real — a segunda devolveu 405 Method Not Allowed, confirmado no
+ *    Graph Explorer: não existe escrita válida nesse endereço para criar a
+ *    pasta do zero. Ver DECISOES.md §18.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GraphReal, type ProvedorDeToken } from '../src/adapters/graph/graphReal';
 import { ErroGraph } from '../src/adapters/graph/cliente';
 
 const TOKEN: ProvedorDeToken = { obterToken: async () => 'token-de-teste' };
+/** Sem atraso real nas retentativas: os testes não devem esperar segundos de verdade. */
+const SEM_ATRASO = 0;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -25,19 +30,15 @@ function itemResposta(id: string) {
   return new Response(JSON.stringify({ id, name: 'App', eTag: 'etag-1', folder: {} }), { status: 200 });
 }
 
-describe('GraphReal — erro HTTP traz método e caminho', () => {
-  it('um 404 na leitura de um item identifica a chamada que falhou', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        new Response(JSON.stringify({ error: { message: 'Item not found' } }), {
-          status: 404,
-          statusText: 'Not Found',
-        }),
-      ),
-    );
+function erro(status: number, mensagem: string) {
+  return new Response(JSON.stringify({ error: { message: mensagem } }), { status });
+}
 
-    const graph = new GraphReal(TOKEN);
+describe('GraphReal — erro HTTP traz método, caminho e o corpo do erro', () => {
+  it('um 404 na leitura de um item identifica a chamada que falhou', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => erro(404, 'Item not found')));
+
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     try {
       await graph.obterItem('item-x');
       expect.unreachable();
@@ -54,12 +55,9 @@ describe('GraphReal — erro HTTP traz método e caminho', () => {
   });
 
   it('um erro de escrita mostra o método correto, não sempre GET', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ error: { message: 'Access denied' } }), { status: 403 })),
-    );
+    vi.stubGlobal('fetch', vi.fn(async () => erro(403, 'Access denied')));
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     try {
       await graph.criarPasta('pai-id', 'state-head');
       expect.unreachable();
@@ -89,7 +87,7 @@ describe('GraphReal — erro HTTP traz método e caminho', () => {
       ),
     );
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     try {
       await graph.criarPasta('pai-id', 'x');
       expect.unreachable();
@@ -103,8 +101,8 @@ describe('GraphReal — erro HTTP traz método e caminho', () => {
   });
 });
 
-describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela não existe', () => {
-  it('lê direto quando a pasta já existe: nenhuma escrita é feita', async () => {
+describe('GraphReal — approot() diante de um 404 na primeira leitura', () => {
+  it('lê direto quando a pasta já existe: nenhuma chamada extra é feita', async () => {
     const chamadas: string[] = [];
     vi.stubGlobal(
       'fetch',
@@ -114,83 +112,104 @@ describe('GraphReal — approot() provisiona a pasta do aplicativo quando ela n�
       }),
     );
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     const item = await graph.approot();
     expect(item.id).toBe('approot-id');
     expect(chamadas).toEqual(['GET https://graph.microsoft.com/v1.0/me/drive/special/approot']);
   });
 
-  it('404 na primeira leitura: cria a pasta-marcador pelo alias e relê, sem deixar a pasta sem provisionar', async () => {
-    const chamadas: { metodo: string; url: string; corpo?: unknown }[] = [];
-    let leituras = 0;
+  it('404 na primeira leitura: toca o drive padrão e relê, sem tentar nenhuma escrita', async () => {
+    const chamadas: string[] = [];
+    let leiturasDeApproot = 0;
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         const metodo = init?.method ?? 'GET';
-        chamadas.push({ metodo, url, corpo: init?.body ? JSON.parse(init.body as string) : undefined });
-        if (metodo === 'GET') {
-          leituras += 1;
-          if (leituras === 1) {
-            return new Response(JSON.stringify({ error: { message: 'Item not found' } }), { status: 404 });
-          }
-          return itemResposta('approot-id-provisionado');
-        }
-        // POST da pasta-marcador de provisionamento, pelo alias — sem dois-pontos.
-        return new Response(JSON.stringify({ id: 'marcador-id', name: 'provisionamento-inicial', folder: {} }), { status: 201 });
+        chamadas.push(`${metodo} ${url}`);
+        if (url.endsWith('/me/drive')) return itemResposta('drive-id');
+        leiturasDeApproot += 1;
+        if (leiturasDeApproot === 1) return erro(404, 'Item not found');
+        return itemResposta('approot-id-depois-de-tocar-o-drive');
       }),
     );
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     const item = await graph.approot();
 
-    expect(item.id).toBe('approot-id-provisionado');
-    expect(chamadas.map((c) => `${c.metodo} ${c.url}`)).toEqual([
+    expect(item.id).toBe('approot-id-depois-de-tocar-o-drive');
+    expect(chamadas).toEqual([
       'GET https://graph.microsoft.com/v1.0/me/drive/special/approot',
-      'POST https://graph.microsoft.com/v1.0/me/drive/special/approot/children',
+      'GET https://graph.microsoft.com/v1.0/me/drive',
       'GET https://graph.microsoft.com/v1.0/me/drive/special/approot',
     ]);
-    expect(chamadas[1]!.corpo).toMatchObject({
-      name: 'provisionamento-inicial',
-      folder: {},
-      '@microsoft.graph.conflictBehavior': 'fail',
-    });
-    // Sem ponto inicial: um nome começando com "." é a diferença mais
-    // concreta em relação aos exemplos documentados de criação de pasta, e
-    // uma tentativa real contra a conta devolveu 400 com o nome antigo.
-    expect((chamadas[1]!.corpo as { name: string }).name.startsWith('.')).toBe(false);
   });
 
-  it('404 seguido de conflito no marcador: outra sessão provisionou primeiro, relê normalmente', async () => {
-    let leituras = 0;
+  it('mesmo que tocar o drive padrão também falhe, tenta reler approot assim mesmo', async () => {
+    let leiturasDeApproot = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        const metodo = init?.method ?? 'GET';
-        if (metodo === 'GET') {
-          leituras += 1;
-          if (leituras === 1) return new Response(JSON.stringify({ error: { message: 'Item not found' } }), { status: 404 });
-          return itemResposta('approot-id');
-        }
-        return new Response(JSON.stringify({ error: { message: 'Name already exists' } }), { status: 409 });
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/me/drive')) return erro(404, 'Item not found');
+        leiturasDeApproot += 1;
+        if (leiturasDeApproot === 1) return erro(404, 'Item not found');
+        return itemResposta('approot-id');
       }),
     );
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     const item = await graph.approot();
     expect(item.id).toBe('approot-id');
   });
 
-  it('404 seguido de falha real no marcador (não conflito): propaga o erro do provisionamento', async () => {
+  it('503 depois de tocar o drive: tenta de novo até três vezes, sem esperar de verdade no teste', async () => {
+    let leiturasDeApproot = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        const metodo = init?.method ?? 'GET';
-        if (metodo === 'GET') return new Response(JSON.stringify({ error: { message: 'Item not found' } }), { status: 404 });
-        return new Response(JSON.stringify({ error: { message: 'Insufficient privileges' } }), { status: 403 });
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/me/drive')) return itemResposta('drive-id');
+        leiturasDeApproot += 1;
+        if (leiturasDeApproot === 1) return erro(404, 'Item not found');
+        if (leiturasDeApproot <= 3) return erro(503, 'User is pending provisioning');
+        return itemResposta('approot-id-na-terceira-retentativa');
       }),
     );
 
-    const graph = new GraphReal(TOKEN);
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
+    const item = await graph.approot();
+    expect(item.id).toBe('approot-id-na-terceira-retentativa');
+    expect(leiturasDeApproot).toBe(4);
+  });
+
+  it('503 persistente: desiste depois de três tentativas e propaga o erro', async () => {
+    let leiturasDeApproot = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/me/drive')) return itemResposta('drive-id');
+        leiturasDeApproot += 1;
+        if (leiturasDeApproot === 1) return erro(404, 'Item not found');
+        return erro(503, 'User is pending provisioning');
+      }),
+    );
+
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
+    await expect(graph.approot()).rejects.toMatchObject({ status: 503 });
+  });
+
+  it('um erro não transitório (403) depois de tocar o drive não é retentado', async () => {
+    let leiturasDeApproot = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/me/drive')) return itemResposta('drive-id');
+        leiturasDeApproot += 1;
+        if (leiturasDeApproot === 1) return erro(404, 'Item not found');
+        return erro(403, 'Insufficient privileges');
+      }),
+    );
+
+    const graph = new GraphReal(TOKEN, SEM_ATRASO);
     await expect(graph.approot()).rejects.toMatchObject({ codigo: 'proibido', status: 403 });
+    expect(leiturasDeApproot).toBe(2);
   });
 });

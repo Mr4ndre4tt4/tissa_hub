@@ -505,3 +505,72 @@ resposta completa em vez de inferir de exemplos genéricos.
 marcador não começa com ponto, e que `error.code`, `innerError.code`,
 `innerError.message` e `request-id` aparecem todos na mensagem final quando
 presentes na resposta.
+
+---
+
+## 18. `approot()` para de tentar escrever; toca o drive padrão e tenta de novo
+
+**Decisão.** Diante de 404 na primeira leitura de `special/approot`,
+`GraphReal.approot()` não tenta mais nenhuma escrita. Em vez disso, faz um
+`GET /me/drive` (o drive padrão, não a pasta especial) e relê `special/approot`
+— com até duas retentativas curtas, só se a releitura vier `503`.
+
+**Por quê — o que foi eliminado, com prova.** As duas tentativas de escrita
+da decisão 14 e 17 foram verificadas diretamente contra a conta real e contra
+o Graph Explorer, e as duas estão descartadas:
+
+1. `PUT special/approot:/nome:/content` (escrita endereçada por caminho) — 404
+   contra a conta real, com escopo restrito e com escopo `Files.ReadWrite`
+   amplo. O caminho por dois-pontos precisa resolver `special/approot` como
+   item já existente; não há o que resolver numa pasta que nunca existiu.
+2. `POST special/approot/children` (criação pelo alias, sem dois-pontos) —
+   confirmado no Graph Explorer, com a conta real: **405 Method Not Allowed**.
+   Não é um método aceito nesse endereço. A documentação que sugeria esse
+   endpoint (secção 14) não corresponde ao comportamento real da API v1.0.
+
+Também confirmado manualmente: a pasta `Apps` já existe na raiz do OneDrive da
+conta, mas está **vazia** — nenhuma das tentativas anteriores criou nada. Isso
+descarta qualquer teoria de que uma tentativa anterior tivesse "quase"
+funcionado.
+
+**A pista que resta.** Um relato recente no fórum oficial da Microsoft (Q&A,
+["Personal OneDrive: newly consented apps get 403 accessDenied / serviceReadOnly ('Database Is Read Only') on ALL drive endpoints, while an app consented months ago works for the same user at the same moment"](https://learn.microsoft.com/en-us/answers/questions/5983388/personal-onedrive-newly-consented-apps-get-403-acc))
+descreve, para contas OneDrive pessoais com aplicativo **recém-consentido**,
+exatamente esta sequência: 404 no início, depois `503 serviceNotAvailable`
+com mensagem "User is pending provisioning", antes de eventualmente
+estabilizar. A causa apontada ali é que o caminho de consentimento por
+`Files.ReadWrite.AppFolder` sozinho não dispara uma etapa de inicialização
+que o backend da Microsoft precisa completar para a conta — enquanto um
+escopo mais amplo (`Files.ReadWrite`) dispara essa inicialização, e ela
+**persiste** depois de disparada.
+
+**O que isto NÃO é.** Uma confirmação definitiva. O relato é de um fórum
+comunitário, não da documentação oficial, e eu não consegui buscar a página
+inteira (bloqueio de rede para `learn.microsoft.com` neste ambiente) — só o
+resumo da busca. É tratado como a pista mais forte disponível, não como fato
+estabelecido.
+
+**Por que tocar `/me/drive` em vez de insistir em `special/approot`.** Se a
+causa real for essa etapa de inicialização pendente do lado da Microsoft, o
+endereço exato que a dispara pode não ser `special/approot` — nossas
+tentativas de leitura E escrita nesse endereço específico, mesmo com escopo
+amplo, continuaram 404. `/me/drive` é o endpoint mais básico possível do
+Graph para OneDrive; tocá-lo é a tentativa mais barata de "acordar" uma
+inicialização pendente antes de desistir.
+
+**Consequência aceita.** Se a causa raiz for mesmo essa, pode não se resolver
+numa única tentativa dentro do tempo de uma sessão de navegador — o relato
+descreve um estado "pending" que pode levar tempo para assentar do lado da
+Microsoft. As retentativas ficam limitadas a 503 e a no máximo três tentativas
+com espera curta, para não travar a pessoa numa tela "conectando" por muito
+tempo; um 404 persistente depois disso continua indo para o modo
+`bloqueio_pasta_app` (decisão 15), e a explicação na tela continua sendo a
+mais honesta disponível — inclusive sugerindo esperar e tentar de novo mais
+tarde, já que parte do problema pode estar do lado da Microsoft, fora do
+alcance deste código.
+
+**Trava de regressão.** `tests/graphReal.test.ts` cobre: pasta já existe (sem
+chamada extra); 404 seguido de toque no drive e releitura bem-sucedida; toque
+no drive que também falha, mas a releitura de approot ainda é tentada; 503
+retentado até dar certo; 503 persistente até desistir na terceira tentativa;
+e um erro não transitório (403) que não é retentado.

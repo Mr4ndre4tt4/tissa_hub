@@ -2,22 +2,21 @@
  * Implementação real do Graph sobre `fetch`.
  *
  * ATENÇÃO — estado de verificação: o login contra o Microsoft Entra real
- * passou a funcionar, e a primeira chamada real ao Graph (`approot()`) já foi
- * exercitada — e corrigida (ver abaixo). O restante do protocolo — gravar e
- * reler uma revisão, publicar o ponteiro com `If-Match`, conflito entre dois
- * clientes — continua **sem confirmação na conta real**. A prova técnica
- * bloqueante da secção 16.5 continua pendente. Nada neste projeto deve afirmar
- * que a integração funciona por inteiro antes dessa execução.
+ * passou a funcionar, e a primeira chamada real ao Graph (`approot()`)
+ * continua bloqueada contra a conta real — ver o comentário de `approot()`
+ * para o histórico das tentativas já descartadas e a hipótese em uso. O
+ * restante do protocolo — gravar e reler uma revisão, publicar o ponteiro com
+ * `If-Match`, conflito entre dois clientes — continua **sem confirmação na
+ * conta real**. A prova técnica bloqueante da secção 16.5 continua pendente.
+ * Nada neste projeto deve afirmar que a integração funciona antes dessa
+ * execução.
  *
  * Decisões que este arquivo aplica:
  *  - download por `@microsoft.graph.downloadUrl`, usando a URL temporária sem
  *    anexar o bearer token e sem guardá-la em estado, log ou repositório (M3);
  *  - PATCH de propriedades sempre com `If-Match` (M6);
  *  - criação de pasta com `conflictBehavior: fail` (secção 16.3);
- *  - nenhuma chamada a `workbook/createSession`: conta pessoal não suporta (M4);
- *  - `approot()` provisiona a pasta do aplicativo com uma escrita quando ela
- *    ainda não existe: diferente de contas corporativas, o OneDrive pessoal
- *    **não** cria a pasta especial numa simples leitura (ver `approot()`).
+ *  - nenhuma chamada a `workbook/createSession`: conta pessoal não suporta (M4).
  */
 
 import { ErroGraph, type ClienteGraph, type ItemDrive, type CodigoErroGraph } from './cliente';
@@ -66,7 +65,11 @@ function paraItem(r: RespostaItem): ItemDrive {
 }
 
 export class GraphReal implements ClienteGraph {
-  constructor(private readonly tokens: ProvedorDeToken) {}
+  constructor(
+    private readonly tokens: ProvedorDeToken,
+    /** Injeção para teste: evita esperar de verdade nas retentativas de 503. */
+    private readonly atrasoRetentativaMs: number = 3000,
+  ) {}
 
   private async requisitar(
     caminho: string,
@@ -121,55 +124,65 @@ export class GraphReal implements ClienteGraph {
   }
 
   /**
-   * Lê a pasta especial do aplicativo, provisionando-a se ainda não existir.
+   * Lê a pasta especial do aplicativo.
    *
-   * Diferente de contas corporativas, o OneDrive pessoal **não** cria a pasta
-   * especial numa leitura: uma conta que nunca teve o aplicativo usado devolve
-   * 404 ("Item not found") em `GET .../special/approot`, mesmo com o
-   * consentimento certo e o OneDrive normal funcionando (relato confirmado
-   * contra a conta real).
+   * Duas tentativas de provisionar por escrita já foram testadas contra a
+   * conta real e **descartadas**:
+   *  - `PUT special/approot:/nome:/content` (escrita endereçada por caminho)
+   *    devolveu 404, inclusive com escopo `Files.ReadWrite` de todo o
+   *    OneDrive — o caminho precisa resolver `special/approot` como um item
+   *    já existente antes de aplicar o resto, e não há o que resolver numa
+   *    pasta que nunca existiu;
+   *  - `POST special/approot/children` devolveu **405 Method Not Allowed**,
+   *    confirmado no Graph Explorer: não é um método aceito nesse endereço —
+   *    a documentação que sugeria isso não corresponde à API real.
    *
-   * A tentativa de provisionar por uma **escrita endereçada pelo caminho**
-   * (`PUT special/approot:/nome:/content`) também falhou 404 contra a conta
-   * real — inclusive com escopo `Files.ReadWrite` de todo o OneDrive, não só
-   * `Files.ReadWrite.AppFolder`. O endereçamento por caminho exige resolver
-   * `special/approot` como um item já existente antes de aplicar o restante
-   * do caminho; se a pasta nunca existiu, não há o que resolver. A
-   * documentação da Microsoft para pastas especiais cita um caminho
-   * diferente, sem dois-pontos: `POST /drive/special/approot/children` — o
-   * alias é tratado como referência de pai para criação de filho, não como um
-   * caminho a resolver, e é justamente o mecanismo desenhado para o primeiro
-   * uso.
+   * A pasta "Apps" existe na conta (confirmado manualmente) mas está vazia:
+   * nenhuma tentativa chegou a criar nada.
+   *
+   * O padrão que resta, apoiado num relato recente da própria Microsoft para
+   * contas pessoais com aplicativo recém-consentido, é 404 seguido de 503
+   * "pending provisioning" — uma etapa de inicialização do lado da Microsoft
+   * que um escopo mais amplo (`Files.ReadWrite`) dispara, mas que pode não
+   * completar na hora. Por isso, um 404 aqui tenta "tocar" o drive padrão
+   * (`GET /me/drive`, sem ser a pasta especial) e espera um 503 se aparecer,
+   * antes de desistir.
    */
   async approot(): Promise<ItemDrive> {
-    try {
+    const ler = async (): Promise<ItemDrive> => {
       const r = await this.requisitar('/me/drive/special/approot');
       return paraItem((await r.json()) as RespostaItem);
+    };
+
+    try {
+      return await ler();
     } catch (e) {
       if (!(e instanceof ErroGraph) || e.codigo !== 'nao_encontrado') throw e;
-      await this.provisionarPastaDoApp();
-      const r = await this.requisitar('/me/drive/special/approot');
-      return paraItem((await r.json()) as RespostaItem);
+      await this.tocarDrivePadrao();
+      return await this.relerComRetentativa(ler);
     }
   }
 
-  /** Cria uma pasta-marcador dentro da pasta do app só para provisioná-la. */
-  private async provisionarPastaDoApp(): Promise<void> {
+  /** GET simples ao drive padrão: só para destravar uma inicialização pendente do lado da Microsoft. */
+  private async tocarDrivePadrao(): Promise<void> {
     try {
-      await this.requisitar('/me/drive/special/approot/children', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'provisionamento-inicial',
-          folder: {},
-          '@microsoft.graph.conflictBehavior': 'fail',
-        }),
-      });
-    } catch (e) {
-      // Outra sessão pode ter provisionado entre a leitura e esta tentativa;
-      // seguimos e relemos approot normalmente.
-      if (e instanceof ErroGraph && e.codigo === 'conflito') return;
-      throw e;
+      await this.requisitar('/me/drive');
+    } catch {
+      // Mesmo que também falhe, seguimos para a nova tentativa de approot: o
+      // detalhe relevante para quem usa o app é o dessa chamada, não desta.
+    }
+  }
+
+  /** Até duas retentativas com espera crescente, só para 503 ("pending provisioning"). */
+  private async relerComRetentativa(ler: () => Promise<ItemDrive>): Promise<ItemDrive> {
+    for (let tentativa = 1; ; tentativa++) {
+      try {
+        return await ler();
+      } catch (e) {
+        const transitorio = e instanceof ErroGraph && (e.status === 503 || e.codigo === 'servidor');
+        if (!transitorio || tentativa >= 3) throw e;
+        await new Promise((resolve) => setTimeout(resolve, this.atrasoRetentativaMs * tentativa));
+      }
     }
   }
 
