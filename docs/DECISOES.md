@@ -256,3 +256,36 @@ restrito a HTTPS, nada vai para `localStorage`, não há client secret e o
 registro de dado pessoal está desligado. A configuração é exportada justamente
 para poder ser testada — uma combinação inválida só apareceria no navegador, no
 meio do login.
+
+---
+
+## 12. `explicar()` não pode esconder o código AADSTS
+
+**Decisão.** `explicar()` (`src/app/estado.tsx`) monta o rodapé do erro a
+partir de `errorCode` **e** `subError`, e procura um `AADSTS\d+` tanto em
+`errorMessage` quanto em `.message` antes de descartar o detalhe.
+
+**Por quê.** Depois de corrigir a decisão 11, uma tentativa real de login
+devolveu `server_error` sem detalhe algum na tela — só o código. A causa: para
+esse código, o MSAL frequentemente entrega `errorMessage` vazio e põe o texto
+completo (com o `AADSTS…` que identifica a causa exata) apenas em `.message`.
+A função só olhava `errorMessage`, então a informação que a pessoa precisava
+para diagnosticar — e relatar — ficava presa dentro da exceção.
+
+`server_error` também ganhou entrada própria em `CAUSAS_MSAL`: a causa mais
+comum é o redirect URI estar cadastrado na plataforma "Web" do registro do
+aplicativo, além de (ou em vez de) "Single-page application" — o que a
+Microsoft recusa com `AADSTS9002326` ("Cross-origin token redemption is
+permitted only for the 'Single-Page Application' client-type").
+
+**O que não mudou.** O armazenamento do cache (decisão 11) continua
+`memoryStorage` + cookie: `server_error` acontece depois da volta do
+redirecionamento, na troca do código por token — não é o mesmo problema que
+`in_mem_redirect_unavailable` resolveu, e nada indica que trocar para
+`sessionStorage` mudaria este resultado.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts` reproduz um erro com
+`errorCode: 'server_error'`, `errorMessage` vazio e o código AADSTS apenas em
+`.message`, e confere que ele aparece na mensagem final — junto com o
+subcódigo, quando presente, e mesmo para um `errorCode` sem causa conhecida no
+mapa.

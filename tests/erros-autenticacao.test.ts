@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
+import { explicar } from '../src/app/estado';
 
 const CONFIG_REAL = lerConfiguracaoPublica({
   VITE_MS_CLIENT_ID: 'c38e8f4f-cb6d-48bd-b067-93f0d44b101a',
@@ -77,5 +78,41 @@ describe('Identidade — inicialização', () => {
     });
     expect(integracaoConfigurada(c)).toBe(true);
     expect(c.authority).toBe('https://login.microsoftonline.com/consumers');
+  });
+});
+
+describe('explicar — server_error não pode esconder o código AADSTS', () => {
+  it('extrai o código AADSTS de dentro de `.message`, mesmo com errorMessage vazio', () => {
+    // Reproduz o erro relatado: errorCode presente, errorMessage vazio, e o
+    // código AADSTS só aparece na mensagem completa do MSAL.
+    const erro = Object.assign(
+      new Error(
+        'Server returned an error. AADSTS9002326: Cross-origin token redemption is permitted only ' +
+          'for the \'Single-Page Application\' client-type.',
+      ),
+      { errorCode: 'server_error', errorMessage: '' },
+    );
+    const texto = explicar(erro);
+    expect(texto).toContain('AADSTS9002326');
+    expect(texto).toMatch(/plataforma "Web"/);
+  });
+
+  it('mostra o subcódigo quando presente', () => {
+    const erro = Object.assign(new Error('falha'), {
+      errorCode: 'server_error',
+      errorMessage: 'falha',
+      subError: 'client_mismatch',
+    });
+    expect(explicar(erro)).toContain('subcódigo: client_mismatch');
+  });
+
+  it('um código sem causa conhecida ainda aparece, com o AADSTS se houver', () => {
+    const erro = Object.assign(new Error('AADSTS50011: algo não bate.'), {
+      errorCode: 'algum_codigo_desconhecido',
+      errorMessage: 'AADSTS50011: algo não bate.',
+    });
+    const texto = explicar(erro);
+    expect(texto).toContain('algum_codigo_desconhecido');
+    expect(texto).toContain('AADSTS50011');
   });
 });

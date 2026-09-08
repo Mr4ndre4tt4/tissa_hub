@@ -114,20 +114,56 @@ const CAUSAS_MSAL: Record<string, string> = {
   access_denied: 'O consentimento foi recusado na tela da Microsoft. Sem ele o aplicativo não acessa a pasta no OneDrive.',
   consent_required: 'É preciso conceder o consentimento na tela da Microsoft para o aplicativo usar a própria pasta no seu OneDrive.',
   popup_window_error: 'O navegador bloqueou a janela de autenticação.',
+  // `server_error` não diz a causa por si só: é a Microsoft recusando na troca
+  // do código por token. A causa mais comum é o redirect URI cadastrado na
+  // plataforma "Web" em vez de (ou além de) "Single-page application" — que
+  // produz AADSTS9002326. O código AADSTS, quando presente na mensagem bruta,
+  // é anexado depois desta explicação.
+  server_error:
+    'A Microsoft recusou a troca do código de login por um token. A causa mais comum é o redirect URI estar ' +
+    'cadastrado na plataforma "Web" em vez de "Single-page application" no registro do aplicativo — remova ' +
+    'qualquer entrada em "Web" e deixe só a de "Single-page application".',
 };
 
-/** Traduz falhas técnicas em português, sem expor exceção bruta (secção 4.10). */
-function explicar(e: unknown): string {
+/**
+ * Procura um código `AADSTS…` dentro de um texto. A Microsoft embute esse
+ * código na descrição do erro; sem ele, "server_error" não diz a causa.
+ */
+function extrairCodigoAADSTS(texto: string): string | null {
+  const m = texto.match(/AADSTS\d+/);
+  return m ? m[0] : null;
+}
+
+/**
+ * Traduz falhas técnicas em português, sem expor exceção bruta (secção 4.10).
+ * Exportada para teste: é a peça que teve de ser corrigida quando `server_error`
+ * chegou sem detalhe visível (o código AADSTS que identifica a causa estava
+ * escondido).
+ */
+export function explicar(e: unknown): string {
   // Erros do MSAL trazem `errorCode`: é a informação que identifica a causa.
   const codigo = (e as { errorCode?: unknown })?.errorCode;
   if (typeof codigo === 'string' && codigo.length > 0) {
     const conhecida = CAUSAS_MSAL[codigo];
     const bruta = (e as { errorMessage?: unknown }).errorMessage;
-    const detalhe = typeof bruta === 'string' && bruta.length > 0 ? bruta : '';
+    const subErro = (e as { subError?: unknown }).subError;
+    const mensagemBase = e instanceof Error ? e.message : '';
+    // `errorMessage` costuma vir vazio para `server_error`; o texto completo
+    // (incluindo o código AADSTS) frequentemente só aparece em `.message`.
+    const detalhe = [
+      typeof bruta === 'string' && bruta.length > 0 ? bruta : '',
+      mensagemBase && mensagemBase !== bruta ? mensagemBase : '',
+    ]
+      .filter((t) => t.length > 0)
+      .join(' ');
+    const aadsts = extrairCodigoAADSTS(detalhe);
+    const sufixoSubErro = typeof subErro === 'string' && subErro.length > 0 ? `, subcódigo: ${subErro}` : '';
+    const sufixoAadsts = aadsts ? `, ${aadsts}` : '';
+    const rodape = `(código: ${codigo}${sufixoAadsts}${sufixoSubErro})`;
     // O código sempre aparece, para poder ser relatado sem ambiguidade.
     return conhecida
-      ? `${conhecida} (código: ${codigo})`
-      : `Falha na autenticação Microsoft — código: ${codigo}.${detalhe ? ` ${detalhe}` : ''}`;
+      ? `${conhecida} ${rodape}`
+      : `Falha na autenticação Microsoft ${rodape}.${detalhe ? ` ${detalhe}` : ''}`;
   }
 
   if (e instanceof RecuperacaoNecessaria) {
