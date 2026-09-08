@@ -1,0 +1,120 @@
+# Publicação da interface no GitHub Pages.
+#
+# Só código e recursos públicos são publicados (secção 14.1). Os dados de
+# trabalho continuam no OneDrive pessoal da pessoa e exigem autenticação
+# Microsoft — a página ser pública não expõe nenhum chamado.
+#
+# A configuração pública (client ID, autoridade, redirect URI e endereço) vem de
+# **variáveis do repositório**, não do código. Elas não são segredos, mas também
+# não são inventadas: enquanto estiverem vazias, o aplicativo publicado exibe
+# "Integração Microsoft não configurada" e oferece apenas o modo demonstrativo.
+#
+# Definir em: Settings → Secrets and variables → Actions → Variables
+#   MS_CLIENT_ID     client ID do registro de aplicativo Microsoft
+#   MS_AUTHORITY     opcional; padrão é a autoridade de consumidores
+#   MS_REDIRECT_URI  precisa ser idêntico ao cadastrado no registro
+#   APP_URL          endereço público da interface
+
+name: Publicar interface
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Uma publicação por vez; não cancela a que já está em andamento.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Publicação só acontece com tipagem limpa e testes passando.
+      - name: Tipagem
+        run: npx tsc -b
+
+      - name: Testes
+        run: npm test
+
+  construir:
+    needs: verificar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Habilita o Pages na primeira execução, com origem "GitHub Actions".
+      # Evita depender de uma configuração manual no repositório.
+      - name: Preparar o Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Construir
+        env:
+          # O próprio Pages informa o caminho base: `/tissa_hub` num repositório
+          # de projeto, vazio num domínio próprio.
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          VITE_MS_CLIENT_ID: ${{ vars.MS_CLIENT_ID }}
+          VITE_MS_AUTHORITY: ${{ vars.MS_AUTHORITY || 'https://login.microsoftonline.com/consumers' }}
+          # Sem variável definida, o redirect fica igual ao endereço publicado.
+          VITE_MS_REDIRECT_URI: ${{ vars.MS_REDIRECT_URI || steps.pages.outputs.base_url }}
+          VITE_APP_URL: ${{ vars.APP_URL || steps.pages.outputs.base_url }}
+        run: npm run build
+
+      # Nenhum insumo privado pode entrar no que vai ao ar (AC-059).
+      - name: Conferir privacidade do build
+        run: |
+          set -e
+          if find dist -type f \( -name '*.xlsm' -o -name '*.xlsx' -o -name '*.csv' \) | grep -q .; then
+            echo "FALHA: o build contém um arquivo de planilha."; exit 1
+          fi
+          if grep -rlE '\b(IR3[0-9]{7}|RR2[0-9]{7}|INC3[0-9]{6}|SCTASK1[0-9]{6})\b' dist/ >/dev/null 2>&1; then
+            echo "FALHA: o build contém identificador de chamado fora da faixa sintética."; exit 1
+          fi
+          if grep -rlE '7aa0e9a0399944ed|382ef4e1c171c5fe|c734299eb47b9b6e' dist/ >/dev/null 2>&1; then
+            echo "FALHA: o build contém hash de insumo privado."; exit 1
+          fi
+          echo "Build sem dados reais."
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Endereço publicado
+        run: |
+          echo "Publicado em ${{ steps.deploy.outputs.page_url }}"
+          echo "Cadastre esse endereço como redirect URI no registro do aplicativo Microsoft."

@@ -1,7 +1,9 @@
 # Operação: configuração, publicação e recuperação
 
-Nada deste documento foi executado nesta entrega. Ele descreve o procedimento
-para quando a configuração real existir.
+A publicação da interface (secção 4) foi autorizada e está automatizada. **Todo
+o resto ainda não foi executado**: nenhum registro de aplicativo Microsoft
+existe, a prova técnica bloqueante da secção 2 não rodou e nenhum dado foi
+gravado no OneDrive.
 
 ---
 
@@ -84,22 +86,87 @@ contra o limite de 768 caracteres.
 
 ---
 
-## 4. Publicação
+## 4. Publicação no GitHub Pages
 
-Só depois da prova técnica e com autorização explícita.
+Autorizada pelo dono do repositório. Publica **apenas código e recursos
+públicos**; os dados de trabalho continuam no OneDrive pessoal e exigem
+autenticação Microsoft. A página ser pública não expõe nenhum chamado (secção
+14.1: "não confundir esconder o botão com proteção").
 
-```bash
-npm run build       # gera dist/
+**Escolha da hospedagem.** GitHub Pages, porque o repositório já está no GitHub,
+é HTTPS por padrão e **não exige contratar nada** — a especificação proíbe
+contratar serviço ou prometer gratuidade permanente. Azure Static Web Apps
+continua sendo uma alternativa válida, sem mudar o destino dos dados.
+
+> **Atenção se o repositório virar privado.** O GitHub Pages em repositório
+> privado exige plano pago. Se você tornar o repositório privado — como sugeri
+> para poder versionar a especificação —, a publicação precisa migrar para outra
+> hospedagem estática autorizada.
+
+### 4.1 O que o workflow faz
+
+`.github/workflows/publicar.yml`, disparado por push em `main` ou manualmente:
+
+1. **verificar** — tipagem e os testes automáticos. Build vermelho não publica.
+2. **construir** — habilita o Pages na primeira execução, constrói com o caminho
+   base correto e **confere que o build não contém planilha, identificador de
+   chamado fora da faixa sintética nem hash de insumo privado** (AC-059).
+3. **publicar** — envia para o Pages e imprime o endereço.
+
+### 4.2 Sequência completa
+
+O endereço é previsível, então o registro Microsoft pode ser feito antes:
+
+```text
+https://mr4ndre4tt4.github.io/tissa_hub/
 ```
 
-`dist/` contém apenas código e recursos públicos. Sirva por **HTTPS**, de uma
-hospedagem estática autorizada. Azure Static Web Apps é uma opção de publicação,
-não um requisito nem uma assinatura já existente; qualquer hospedagem estática
-autorizada serve, sem mudar o destino dos dados.
+1. **Levar o código para `main`.** O workflow só dispara nesse ramo.
+2. **Primeira publicação.** A página sobe funcionando, porém em **modo
+   demonstrativo**: sem client ID ela exibe "Integração Microsoft não
+   configurada" e não grava nada. Isso é esperado, não é falha.
+3. **Registrar o aplicativo Microsoft** (secção 1 deste documento), usando
+   `https://mr4ndre4tt4.github.io/tissa_hub/` como redirect URI — com a barra
+   final, idêntico.
+4. **Definir a variável do repositório** em Settings → Secrets and variables →
+   Actions → **Variables**:
 
-Depois de publicar:
+   | Variável | Valor |
+   |---|---|
+   | `MS_CLIENT_ID` | client ID do registro |
+   | `MS_REDIRECT_URI` | opcional; sem ela, usa o endereço do Pages |
+   | `MS_AUTHORITY` | opcional; padrão é a autoridade de consumidores |
+   | `APP_URL` | opcional; sem ela, usa o endereço do Pages |
 
-1. acrescente o endereço real ao `redirect URI` do registro e ao `.env`;
+   São **configurações públicas**, não segredos — por isso variáveis, e não
+   secrets. Mas não devem ser inventadas: variável vazia é tratada como ausente.
+5. **Republicar** — Actions → "Publicar interface" → Run workflow. Agora o botão
+   "Entrar com Microsoft" aparece.
+6. **Executar a prova técnica bloqueante** da secção 2 deste documento, na conta
+   real. **Só depois disso** o aplicativo pode ser usado com dados reais.
+7. **Confirmar a rotina no endereço publicado**: entrar, importar, registrar
+   esforço e abrir a mesma base em outra máquina. Antes disso, nada de declarar
+   a integração pronta.
+
+### 4.3 Publicação em outra hospedagem
+
+```bash
+VITE_BASE=/ \
+VITE_MS_CLIENT_ID=… VITE_MS_REDIRECT_URI=… VITE_APP_URL=… \
+npm run build
+```
+
+`dist/` contém só código e recursos públicos. Sirva por HTTPS, de uma hospedagem
+estática autorizada.
+
+---
+
+### 4.4 Regras que valem em qualquer publicação
+
+Publicar a interface é diferente de liberar o uso com dados reais: o segundo
+depende da prova técnica da secção 2. Depois de publicar:
+
+1. o endereço real precisa constar do `redirect URI` do registro;
 2. **abra o endereço publicado** e confirme login, gravação e leitura em outra
    máquina;
 3. só então a integração pode ser declarada funcionando. Build verde e teste

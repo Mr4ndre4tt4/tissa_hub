@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
+  /*
+   * Caminho base da publicação. Em desenvolvimento é a raiz; no GitHub Pages de
+   * um repositório de projeto o site fica sob `/<nome-do-repositório>/`, e o
+   * workflow define VITE_BASE. Outra hospedagem que sirva na raiz não precisa
+   * definir nada.
+   */
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   resolve: {
     alias: {
