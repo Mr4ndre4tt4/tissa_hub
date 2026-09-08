@@ -214,3 +214,45 @@ caminho em `CENTRAL_CONTRATOS` (padrão `especificacao/contratos`), em vez de
 importá-los estaticamente. Assim o projeto compila e os testes sintéticos rodam
 sem o pacote presente, e a conferência com o arquivo real continua possível no
 ambiente autorizado.
+
+
+---
+
+## 11. Armazenamento do cache de autenticação
+
+**Decisão.** `cacheLocation: 'memoryStorage'` com `storeAuthStateInCookie: true`
+e `secureCookies: true`.
+
+**Por quê.** A secção 15.1 pede cache "preferindo memória e apenas estado
+transitório necessário ao redirecionamento". A primeira tentativa foi memória
+com `storeAuthStateInCookie: false`, e o MSAL **recusa** essa combinação no
+fluxo de redirecionamento, com `in_mem_redirect_unavailable`: nada sobreviveria
+à volta do login para processar a resposta. `temporaryCacheLocation:
+'sessionStorage'` não satisfaz a verificação — o MSAL exige o cookie.
+
+A combinação adotada mantém a intenção da especificação:
+
+- os **tokens** ficam apenas em memória, somem ao fechar a página e nunca vão
+  para `localStorage` nem são serializados em JSON do OneDrive ou log;
+- somente o **estado transitório do redirecionamento** — state, nonce e
+  verificador PKCE — fica num cookie de vida curta, restrito a HTTPS. É
+  literalmente o "estado transitório necessário ao redirecionamento" que a
+  secção 15.1 admite. Esse cookie trafega para a hospedagem estática, que já
+  serve o próprio código da página: não amplia o que ela poderia observar.
+
+**Alternativa descartada.** `cacheLocation: 'sessionStorage'` funcionaria e
+sobreviveria a um recarregamento, mas colocaria os tokens fora da memória — mais
+distante do que a especificação pede. Fica registrada como troca possível caso
+a reautenticação a cada recarregamento se mostre incômoda no uso diário.
+
+**Consequência aceita.** Recarregar a página encerra a sessão e exige entrar de
+novo. Como a sessão da Microsoft permanece no navegador, normalmente é um
+redirecionamento rápido, sem digitar senha. A secção 15.1 já prevê pedir
+reautenticação sem perder o formulário em memória.
+
+**Trava de regressão.** `tests/erros-autenticacao.test.ts` verifica a
+configuração montada: cache em memória obriga cookie de estado, o cookie é
+restrito a HTTPS, nada vai para `localStorage`, não há client secret e o
+registro de dado pessoal está desligado. A configuração é exportada justamente
+para poder ser testada — uma combinação inválida só apareceria no navegador, no
+meio do login.

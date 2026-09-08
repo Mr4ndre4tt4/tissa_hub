@@ -64,6 +64,59 @@ export class IntegracaoNaoConfigurada extends Error {
   }
 }
 
+/**
+ * Configuração do MSAL. Exportada para poder ser verificada por teste: uma
+ * combinação inválida aqui só apareceria no navegador, no meio do login.
+ *
+ * Sobre o armazenamento (secção 15.1, "preferindo memória e apenas estado
+ * transitório necessário ao redirecionamento"):
+ *
+ * O MSAL **recusa** o fluxo de redirecionamento quando o cache é `memoryStorage`
+ * e `storeAuthStateInCookie` é falso — erro `in_mem_redirect_unavailable` —
+ * porque nada sobreviveria à volta do login para processar a resposta.
+ *
+ * A combinação escolhida mantém a intenção da especificação:
+ *  - os **tokens** ficam só em memória e somem ao fechar a página; nunca vão
+ *    para localStorage nem são serializados em JSON do OneDrive ou log;
+ *  - apenas o **estado transitório do redirecionamento** (state, nonce e o
+ *    verificador PKCE) fica num cookie de vida curta, que é exatamente o
+ *    "estado transitório necessário ao redirecionamento" que a especificação
+ *    admite. Esse cookie trafega para a hospedagem estática, que já serve o
+ *    próprio código da página — não amplia o que ela poderia observar.
+ *
+ * Consequência aceita: recarregar a página encerra a sessão e exige entrar de
+ * novo. A especificação já prevê pedir reautenticação sem perder o formulário.
+ */
+export function configuracaoMsal(config: ConfiguracaoPublica): Configuration {
+  if (!integracaoConfigurada(config)) throw new IntegracaoNaoConfigurada();
+  return {
+    auth: {
+      clientId: config.clientId!,
+      authority: config.authority,
+      redirectUri: config.redirectUri!,
+      // Sem client secret no navegador; o PKCE é aplicado pelo MSAL.
+      //
+      // `false` porque a aplicação roteia por hash: deixar o MSAL renavegar
+      // para a URL original depois do retorno embaralha o fragmento e é uma
+      // fonte conhecida de laço de redirecionamento em SPA com hash.
+      navigateToLoginRequestUrl: false,
+    },
+    cache: {
+      cacheLocation: 'memoryStorage',
+      // Exigido pelo MSAL para o fluxo de redirecionamento com cache em memória.
+      storeAuthStateInCookie: true,
+      secureCookies: true,
+    },
+    system: {
+      loggerOptions: {
+        // Nenhum dado pessoal (nem token) é registrado.
+        piiLoggingEnabled: false,
+        loggerCallback: () => undefined,
+      },
+    },
+  };
+}
+
 export class Identidade implements ProvedorDeToken {
   private conta: AccountInfo | null = null;
   private escoposConsentidos = new Set<string>([ESCOPO_PASTA_DO_APP]);
@@ -73,35 +126,7 @@ export class Identidade implements ProvedorDeToken {
   constructor(private readonly config: ConfiguracaoPublica) {}
 
   private criarApp(): PublicClientApplication {
-    if (!integracaoConfigurada(this.config)) throw new IntegracaoNaoConfigurada();
-    const configuracao: Configuration = {
-      auth: {
-        clientId: this.config.clientId!,
-        authority: this.config.authority,
-        redirectUri: this.config.redirectUri!,
-        // Sem client secret no navegador; o PKCE é aplicado pelo MSAL.
-        //
-        // `false` porque a aplicação roteia por hash: deixar o MSAL renavegar
-        // para a URL original depois do retorno embaralha o fragmento e é uma
-        // fonte conhecida de laço de redirecionamento em SPA com hash.
-        navigateToLoginRequestUrl: false,
-      },
-      cache: {
-        // Memória por padrão; apenas o estado transitório do redirecionamento
-        // usa sessionStorage. Nenhum token vai para localStorage.
-        cacheLocation: 'memoryStorage',
-        temporaryCacheLocation: 'sessionStorage',
-        storeAuthStateInCookie: false,
-      },
-      system: {
-        loggerOptions: {
-          // Nenhum dado pessoal (nem token) é registrado.
-          piiLoggingEnabled: false,
-          loggerCallback: () => undefined,
-        },
-      },
-    };
-    return new PublicClientApplication(configuracao);
+    return new PublicClientApplication(configuracaoMsal(this.config));
   }
 
   /**
