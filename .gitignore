@@ -15,6 +15,7 @@ recovery/
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
 
 # Logs e resultados de teste — revisar antes de publicar.
 *.log
