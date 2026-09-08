@@ -18,6 +18,7 @@
 #
 # Definir em: Settings → Secrets and variables → Actions → Variables
 #   MS_CLIENT_ID     client ID do registro de aplicativo Microsoft
+#                    (já há um valor padrão no arquivo; a variável tem prioridade)
 #   MS_AUTHORITY     opcional; padrão é a autoridade de consumidores
 #   MS_REDIRECT_URI  opcional; padrão é o próprio endereço publicado
 #   APP_URL          opcional; padrão é o próprio endereço publicado
@@ -68,7 +69,12 @@ jobs:
       - name: Construir
         env:
           VITE_BASE: ${{ steps.destino.outputs.base }}
-          VITE_MS_CLIENT_ID: ${{ vars.MS_CLIENT_ID }}
+          # Client ID do registro de aplicativo. NÃO é credencial secreta: é
+          # configuração pública, como a autoridade e o redirect URI (secção
+          # 15.1). Fica aqui para a publicação funcionar sem depender de mexer
+          # nas configurações do repositório; a variável MS_CLIENT_ID, se
+          # definida, tem prioridade sobre este valor.
+          VITE_MS_CLIENT_ID: ${{ vars.MS_CLIENT_ID || 'c38e8f4f-cb6d-48bd-b067-93f0d44b101a' }}
           VITE_MS_AUTHORITY: ${{ vars.MS_AUTHORITY || 'https://login.microsoftonline.com/consumers' }}
           VITE_MS_REDIRECT_URI: ${{ vars.MS_REDIRECT_URI || steps.destino.outputs.url }}
           VITE_APP_URL: ${{ vars.APP_URL || steps.destino.outputs.url }}
