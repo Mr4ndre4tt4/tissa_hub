@@ -756,3 +756,26 @@ na mensagem que a pessoa vê na tela.
 **Trava de regressão.** `tests/graphReal.test.ts` confere que o domínio da
 URL de download aparece no erro e que a query string (onde fica a
 autenticação temporária) nunca aparece.
+
+---
+
+## 22. CSP libera `*.microsoftpersonalcontent.com`
+
+**Decisão.** `connect-src` em `index.html` ganha
+`https://*.microsoftpersonalcontent.com`.
+
+**Por quê.** O domínio real, devolvido pela mensagem de erro da decisão 21
+contra a conta real, é `my.microsoftpersonalcontent.com` — o domínio que o
+Microsoft Graph usa para download de conteúdo do OneDrive **pessoal**.
+Nenhum dos domínios já liberados batia com ele: `*.sharepoint.com` é
+OneDrive/SharePoint corporativo, `*.up.1drv.com` e `*.files.1drv.com` são de
+links de compartilhamento — famílias de domínio diferentes, servindo contas
+diferentes. Confirmado com o dado real, não com suposição — a decisão 21
+existe exatamente para não repetir o padrão das decisões 14 e 17 (corrigir
+antes de confirmar a causa).
+
+**Trava de regressão.** `tests/csp.test.ts` (novo) lê `index.html` e confere
+que `connect-src` contém `https://*.microsoftpersonalcontent.com`, além de
+`graph.microsoft.com` e `login.microsoftonline.com` — para este domínio
+específico não voltar a desaparecer silenciosamente numa edição futura da
+política.
