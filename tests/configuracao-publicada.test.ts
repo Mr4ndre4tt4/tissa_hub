@@ -53,8 +53,9 @@ describe('configuração do aplicativo publicado', () => {
     expect(exemplo.hosting.publicAppUrl).toBeNull();
     expect(exemplo.auth.clientSecretAllowed).toBe(false);
     expect(exemplo.hosting.publishRequiresApproval).toBe(true);
-    // O escopo inicial é o da pasta do aplicativo, não algo mais amplo.
-    expect(exemplo.auth.initialGraphScopes).toEqual(['Files.ReadWrite.AppFolder']);
+    // Files.ReadWrite (não .AppFolder): a pasta especial do OneDrive não
+    // funciona nesta conta, confirmado contra a conta real (DECISOES.md §19).
+    expect(exemplo.auth.initialGraphScopes).toEqual(['Files.ReadWrite']);
   });
 
   it('a prova de persistência continua exigida antes do uso produtivo', () => {

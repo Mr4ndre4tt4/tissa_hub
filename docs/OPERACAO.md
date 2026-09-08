@@ -20,10 +20,21 @@ Necessário para qualquer coisa sair do modo demonstrativo.
    será servida (por exemplo `https://exemplo.com/` em produção e
    `http://localhost:5173/` em desenvolvimento). Redirecionamentos precisam
    corresponder ao registro.
-4. Permissão delegada inicial: **`Files.ReadWrite.AppFolder`**. Não amplie.
-   `Files.Read` só entra por consentimento incremental, quando a pessoa escolher
-   vincular um arquivo fora da pasta do aplicativo — e a interface explica que
-   esse escopo **não** é exclusivo daquele único arquivo.
+4. Permissão delegada: **`Files.ReadWrite`** (acesso a todo o OneDrive).
+   `Files.Read` entra por consentimento incremental, quando a pessoa escolher
+   vincular um arquivo fora da pasta do aplicativo.
+
+> **Por que `Files.ReadWrite` e não `Files.ReadWrite.AppFolder`.** Era a
+> permissão restrita à pasta especial do aplicativo (`special/approot`) até
+> se confirmar, contra a conta real, que esse mecanismo não funciona nesta
+> conta por nenhum método testado — leitura, escrita por caminho, criação
+> pelo alias (a última confirmada **405 Method Not Allowed** no Graph
+> Explorer). Uma pasta comum na raiz do OneDrive, com nome fixo, funciona
+> normalmente — mas exige `Files.ReadWrite`, porque o OAuth não tem um escopo
+> "só esta pasta nomeada". O código continua só lendo e gravando dentro da
+> própria pasta do aplicativo; é a permissão técnica concedida que é mais
+> ampla que o necessário. Decisão explícita da pessoa dona da conta, com a
+> prova que levou a ela, em `DECISOES.md` §18-19.
 
 Depois, copie `.env.example` para `.env` e preencha:
 
@@ -37,17 +48,6 @@ VITE_APP_URL=               # endereço publicado, quando existir
 Valores em branco significam “entrada real ainda não fornecida”. Não preencha
 com exemplo fictício: o aplicativo trata branco como não configurado e mostra a
 mensagem correta.
-
-> **Limitação conhecida da Microsoft, não deste aplicativo.** Com apenas
-> `Files.ReadWrite.AppFolder`, a pasta do aplicativo pode não se criar sozinha
-> na primeira conexão de uma conta — o Microsoft Graph devolve 404 mesmo com o
-> consentimento certo (relatado e sem resolução permanente publicada pela
-> Microsoft em
-> [OneDrive/onedrive-api-docs#682](https://github.com/OneDrive/onedrive-api-docs/issues/682)).
-> Quando isso acontece, a própria interface explica a situação e oferece um
-> botão para autorizar, só nessa vez, uma permissão mais ampla que cria a
-> pasta — nunca automaticamente. Depois disso o aplicativo volta a usar só
-> `Files.ReadWrite.AppFolder`. Detalhes técnicos em `DECISOES.md` §14 e §15.
 
 ---
 

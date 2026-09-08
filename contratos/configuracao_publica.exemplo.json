@@ -8,7 +8,7 @@
     "authority": "https://login.microsoftonline.com/consumers",
     "redirectUri": null,
     "initialGraphScopes": [
-      "Files.ReadWrite.AppFolder"
+      "Files.ReadWrite"
     ],
     "optionalExternalSourceScope": "Files.Read",
     "clientSecretAllowed": false

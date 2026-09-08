@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { useApp } from '../../app/estado';
 import { Aviso, Campo, ConfirmarExclusao, EtiquetaCelula, Marca, Painel } from '../../design/componentes';
 import { CELULAS, type Revision } from '../../domain/entities/tipos';
-import { ESCOPO_LEITURA_EXTERNA, ESCOPO_PASTA_DO_APP, integracaoConfigurada } from '../../adapters/identity/msal';
+import { ESCOPO_LEITURA_EXTERNA, ESCOPO_PRINCIPAL, integracaoConfigurada } from '../../adapters/identity/msal';
 import { MAPA_STATUS_CS3 } from '../../domain/entities/celulas';
 import { rotularMinutos } from '../../domain/time/duracao';
 
@@ -90,7 +90,7 @@ export function Configuracoes() {
               <tr>
                 <th scope="row">Escopo em uso</th>
                 <td>
-                  <Marca>{ESCOPO_PASTA_DO_APP}</Marca> — pasta especial do aplicativo
+                  <Marca>{ESCOPO_PRINCIPAL}</Marca> — cobre o OneDrive inteiro; o aplicativo só lê e grava a própria pasta
                 </td>
               </tr>
               <tr>
@@ -103,8 +103,10 @@ export function Configuracoes() {
           </table>
         </div>
         <p className="rodape-nota">
-          Nenhuma permissão é ampliada automaticamente. <strong>{ESCOPO_LEITURA_EXTERNA}</strong> não é uma permissão exclusiva de um único
-          arquivo: o aplicativo limita a sua lógica ao item que você escolher, mas o OAuth não oferece esse isolamento.
+          Nenhuma permissão é ampliada automaticamente pelo código. <strong>{ESCOPO_PRINCIPAL}</strong> já cobre o OneDrive inteiro —
+          decisão registrada em DECISOES.md §19, depois de confirmar que a pasta especial do aplicativo não funciona nesta conta — e{' '}
+          <strong>{ESCOPO_LEITURA_EXTERNA}</strong> não é uma permissão exclusiva de um único arquivo: o aplicativo limita a sua lógica ao
+          item que você escolher, mas o OAuth não oferece esse isolamento.
         </p>
       </Painel>
 

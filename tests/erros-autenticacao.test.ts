@@ -5,15 +5,7 @@
  * (secção 4.10) — e sempre com o código, para poder ser relatado.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  configuracaoMsal,
-  ESCOPO_LEITURA_EXTERNA,
-  ESCOPO_PASTA_DO_APP,
-  ESCOPO_PROVISIONAMENTO_UNICO,
-  Identidade,
-  integracaoConfigurada,
-  lerConfiguracaoPublica,
-} from '../src/adapters/identity/msal';
+import { configuracaoMsal, Identidade, integracaoConfigurada, lerConfiguracaoPublica } from '../src/adapters/identity/msal';
 import { explicar } from '../src/app/estado';
 import { ErroGraph } from '../src/adapters/graph/cliente';
 
@@ -65,7 +57,6 @@ describe('Identidade — inicialização', () => {
     const id = new Identidade(lerConfiguracaoPublica({}));
     await expect(id.entrar()).rejects.toThrow(/não configurada/i);
     await expect(id.iniciar()).rejects.toThrow(/não configurada/i);
-    await expect(id.consentirProvisionamentoUnico()).rejects.toThrow(/não configurada/i);
   });
 
   it('uma falha de preparação não trava as tentativas seguintes', async () => {
@@ -88,21 +79,6 @@ describe('Identidade — inicialização', () => {
     });
     expect(integracaoConfigurada(c)).toBe(true);
     expect(c.authority).toBe('https://login.microsoftonline.com/consumers');
-  });
-});
-
-describe('escopo de provisionamento único — identificável sem ambiguidade', () => {
-  it('não coincide, por igualdade exata, com nenhum outro escopo do aplicativo', () => {
-    // iniciar() reconhece o retorno do consentimento único comparando por
-    // igualdade exata (Set.includes) o escopo concedido a este valor. Se
-    // algum dia coincidisse com outro escopo do aplicativo, um login comum
-    // seria confundido com o retorno do provisionamento único.
-    expect(ESCOPO_PROVISIONAMENTO_UNICO).toBe('Files.ReadWrite');
-    expect(ESCOPO_PROVISIONAMENTO_UNICO).not.toBe(ESCOPO_PASTA_DO_APP);
-    expect(ESCOPO_PROVISIONAMENTO_UNICO).not.toBe(ESCOPO_LEITURA_EXTERNA);
-    // É prefixo de ESCOPO_PASTA_DO_APP, mas não igual — a comparação exata
-    // não confunde os dois mesmo assim.
-    expect(ESCOPO_PASTA_DO_APP.toLowerCase().startsWith(ESCOPO_PROVISIONAMENTO_UNICO.toLowerCase())).toBe(true);
   });
 });
 
@@ -143,8 +119,7 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
 
   it('um 404 do Graph explica a causa provável e mantém o detalhe original', () => {
     // Reproduz "Item not found" isolado, sem dizer qual chamada falhou — o
-    // detalhe agora traz método e caminho (ver graphReal.ts). approot() já se
-    // auto-provisiona, então um 404 chegando até aqui é outro item.
+    // detalhe agora traz método e caminho (ver graphReal.ts).
     const erro = new ErroGraph('GET /me/drive/items/xyz → 404 Item not found.', 'nao_encontrado', 404);
     const texto = explicar(erro);
     expect(texto).toMatch(/movido, renomeado ou removido/);
@@ -156,12 +131,8 @@ describe('explicar — server_error não pode esconder o código AADSTS', () => 
     // código (por exemplo 400) cai em 'transporte' — mas a mensagem crua
     // (método, caminho, status) continuava sendo descartada pela versão
     // anterior desta função, escondendo exatamente o que precisava aparecer.
-    const httpNaoClassificado = new ErroGraph(
-      'POST /me/drive/special/approot/children → 400 Invalid request.',
-      'transporte',
-      400,
-    );
-    expect(explicar(httpNaoClassificado)).toContain('POST /me/drive/special/approot/children → 400 Invalid request.');
+    const httpNaoClassificado = new ErroGraph('POST /me/drive/root/children → 400 Invalid request.', 'transporte', 400);
+    expect(explicar(httpNaoClassificado)).toContain('POST /me/drive/root/children → 400 Invalid request.');
 
     const falhaDeRede = new ErroGraph('A conexão falhou: Failed to fetch', 'transporte');
     expect(explicar(falhaDeRede)).toContain('Failed to fetch');

@@ -1,8 +1,8 @@
 /**
  * Autenticação Microsoft pessoal via MSAL Browser.
  *
- * ATENÇÃO — estado de verificação: o client ID já está configurado, mas o fluxo
- * contra o Microsoft Entra real **ainda não foi confirmado ponta a ponta**. Sem
+ * ATENÇÃO — estado de verificação: o client ID já está configurado, o fluxo de
+ * login contra o Microsoft Entra real já foi confirmado ponta a ponta. Sem
  * configuração, o aplicativo exibe "Integração Microsoft não configurada" e
  * oferece o modo demonstrativo separado — nunca finge uma conexão (secção 15.1).
  *
@@ -10,8 +10,10 @@
  *  - Authorization Code com PKCE, via MSAL; sem client secret no navegador e
  *    sem fluxo implícito como atalho (M1);
  *  - autoridade de consumidores, compatível com conta Microsoft pessoal;
- *  - escopo inicial `Files.ReadWrite.AppFolder`; `Files.Read` só por
- *    consentimento incremental e explícito (M2, M3);
+ *  - escopo `Files.ReadWrite` — ver DECISOES.md §19 sobre por que não é mais
+ *    `Files.ReadWrite.AppFolder`; `Files.Read` só por consentimento
+ *    incremental e explícito quando a pessoa vincular um arquivo fora da
+ *    pasta do aplicativo (M2, M3);
  *  - cache em memória: tokens nunca são serializados em JSON do OneDrive ou log.
  */
 
@@ -23,20 +25,22 @@ import {
 } from '@azure/msal-browser';
 import type { ProvedorDeToken } from '../graph/graphReal';
 
-export const ESCOPO_PASTA_DO_APP = 'Files.ReadWrite.AppFolder';
-export const ESCOPO_LEITURA_EXTERNA = 'Files.Read';
-
 /**
- * Consentimento único e explícito para uma permissão mais ampla — acesso a
- * todo o OneDrive, não só à pasta do aplicativo. Usado apenas para destravar
- * a criação da pasta do aplicativo quando `Files.ReadWrite.AppFolder` sozinho
- * não consegue: limitação conhecida do Microsoft Graph (não deste código —
- * ver DECISOES.md §15), confirmada contra a conta real e documentada em
- * https://github.com/OneDrive/onedrive-api-docs/issues/682. Nunca entra em
- * `escoposConsentidos`: o dia a dia do aplicativo volta a pedir só a pasta do
- * aplicativo depois deste único uso.
+ * Escopo principal do aplicativo.
+ *
+ * Era `Files.ReadWrite.AppFolder` (acesso restrito só à pasta especial do
+ * app). Trocado para `Files.ReadWrite` (acesso a todo o OneDrive) depois de
+ * confirmar, contra a conta real, que o mecanismo de pasta especial
+ * (`special/approot`) não funciona nesta conta por nenhum método testado —
+ * leitura, escrita por caminho, criação pelo alias — enquanto uma pasta
+ * comum na raiz (`root/children`) funciona normalmente. Decisão explícita da
+ * pessoa dona da conta, registrada em DECISOES.md §19: o código continua só
+ * lendo e gravando a própria pasta do aplicativo, mas a permissão técnica
+ * concedida cobre o OneDrive inteiro — diferente do que a especificação
+ * original pedia.
  */
-export const ESCOPO_PROVISIONAMENTO_UNICO = 'Files.ReadWrite';
+export const ESCOPO_PRINCIPAL = 'Files.ReadWrite';
+export const ESCOPO_LEITURA_EXTERNA = 'Files.Read';
 
 export interface ConfiguracaoPublica {
   clientId: string | null;
@@ -131,7 +135,7 @@ export function configuracaoMsal(config: ConfiguracaoPublica): Configuration {
 
 export class Identidade implements ProvedorDeToken {
   private conta: AccountInfo | null = null;
-  private escoposConsentidos = new Set<string>([ESCOPO_PASTA_DO_APP]);
+  private escoposConsentidos = new Set<string>([ESCOPO_PRINCIPAL]);
   /** Inicialização em curso. O MSAL v3 exige `initialize()` antes de tudo. */
   private preparacao: Promise<PublicClientApplication> | null = null;
 
@@ -164,29 +168,14 @@ export class Identidade implements ProvedorDeToken {
     return this.preparacao;
   }
 
-  /**
-   * Processa o retorno de um redirecionamento, se houver, e devolve a conta
-   * ativa. Quando o retorno é o do consentimento único de provisionamento
-   * (secção `ESCOPO_PROVISIONAMENTO_UNICO`), o token dessa troca específica
-   * também é devolvido — nenhum outro fluxo deste aplicativo pede exatamente
-   * `Files.ReadWrite` sem o sufixo `.AppFolder`, então a presença desse escopo
-   * na resposta identifica o retorno sem ambiguidade.
-   */
-  async iniciar(): Promise<{ conta: AccountInfo | null; tokenProvisionamentoUnico: string | null }> {
+  /** Processa o retorno de um redirecionamento, se houver, e devolve a conta ativa. */
+  async iniciar(): Promise<AccountInfo | null> {
     const app = await this.pronta();
     const resultado = await app.handleRedirectPromise();
-    let tokenProvisionamentoUnico: string | null = null;
-    if (resultado?.account) {
-      this.conta = resultado.account;
-      const escoposConcedidos = (resultado.scopes ?? []).map((s) => s.toLowerCase());
-      if (escoposConcedidos.includes(ESCOPO_PROVISIONAMENTO_UNICO.toLowerCase())) {
-        tokenProvisionamentoUnico = resultado.accessToken;
-      }
-    } else {
-      this.conta = app.getActiveAccount() ?? app.getAllAccounts()[0] ?? null;
-    }
+    if (resultado?.account) this.conta = resultado.account;
+    else this.conta = app.getActiveAccount() ?? app.getAllAccounts()[0] ?? null;
     if (this.conta) app.setActiveAccount(this.conta);
-    return { conta: this.conta, tokenProvisionamentoUnico };
+    return this.conta;
   }
 
   async entrar(): Promise<void> {
@@ -203,17 +192,6 @@ export class Identidade implements ProvedorDeToken {
     const app = await this.pronta();
     this.escoposConsentidos.add(ESCOPO_LEITURA_EXTERNA);
     await app.acquireTokenRedirect({ scopes: [ESCOPO_LEITURA_EXTERNA] });
-  }
-
-  /**
-   * Consentimento único e explícito para destravar a criação da pasta do
-   * aplicativo (ver `ESCOPO_PROVISIONAMENTO_UNICO`). Deliberadamente **não**
-   * adiciona o escopo a `escoposConsentidos`: depois deste uso único, o
-   * aplicativo volta a pedir só a pasta do aplicativo.
-   */
-  async consentirProvisionamentoUnico(): Promise<void> {
-    const app = await this.pronta();
-    await app.acquireTokenRedirect({ scopes: [ESCOPO_PROVISIONAMENTO_UNICO], prompt: 'consent' });
   }
 
   async obterToken(): Promise<string> {
@@ -247,7 +225,7 @@ export class Identidade implements ProvedorDeToken {
     const app = await this.pronta();
     const conta = this.conta;
     this.conta = null;
-    this.escoposConsentidos = new Set([ESCOPO_PASTA_DO_APP]);
+    this.escoposConsentidos = new Set([ESCOPO_PRINCIPAL]);
     await app.logoutRedirect({ account: conta ?? undefined });
   }
 }

@@ -138,17 +138,21 @@ Verificada com navegador real (`npm run verificar:interface`), capturas em
 
 ## 3. Implementado sem teste real
 
-Estes componentes estão escritos, tipados e compilados, mas **nunca foram
-executados contra o serviço real**:
-
 - **`src/adapters/identity/msal.ts`** — Authorization Code com PKCE, autoridade
-  de consumidores, cache em memória, escopo `Files.ReadWrite.AppFolder` e
-  consentimento incremental para `Files.Read`. Nunca executado contra o
-  Microsoft Entra.
+  de consumidores, cache em memória, consentimento incremental para
+  `Files.Read`. **O login em si já foi confirmado contra o Microsoft Entra
+  real** (secção 2, abaixo). O escopo principal é `Files.ReadWrite` — não
+  `Files.ReadWrite.AppFolder` como a especificação original pedia; ver
+  `DECISOES.md` §18-19 para a causa (a pasta especial do OneDrive não
+  funciona nesta conta) e a autorização explícita da pessoa dona da conta
+  para essa troca de escopo.
 - **`src/adapters/graph/graphReal.ts`** — chamadas ao Graph com `If-Match` no
   PATCH, `conflictBehavior: fail`, download por `@microsoft.graph.downloadUrl`
-  sem anexar o bearer token, tradução de 401/403/404/409/412/429/507. Nunca
-  executado contra o Microsoft Graph.
+  sem anexar o bearer token, tradução de 401/403/404/409/412/429/507.
+  **`approot()` (leitura/criação da pasta do aplicativo) já foi confirmado
+  contra o Microsoft Graph real** — o restante (gravar e reler uma revisão
+  com verificação de SHA-256, publicar o ponteiro com `If-Match`, conflito
+  entre dois clientes) continua sem execução real.
 - **Tratamento de `429` com `Retry-After`** — implementado na tradução de erro,
   sem teste que o exercite.
 

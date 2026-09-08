@@ -444,11 +444,18 @@ específica é usado só para a chamada de criação da pasta, nunca guardado.
 **Consequência para a prova técnica da secção 16.5.** Só a criação da pasta
 foi confirmada contra a conta real. O restante do protocolo continua pendente.
 
-**Trava de regressão.** `tests/erros-autenticacao.test.ts` confere que
-`ESCOPO_PROVISIONAMENTO_UNICO` (`Files.ReadWrite`) não coincide, por igualdade
-exata, com nenhum outro escopo do aplicativo — a mesma comparação que
-`iniciar()` usa para reconhecer o retorno — e que a operação recusa sem
-configuração, como as demais.
+**Trava de regressão (na época).** `tests/erros-autenticacao.test.ts`
+conferia que `ESCOPO_PROVISIONAMENTO_UNICO` (`Files.ReadWrite`) não coincidia,
+por igualdade exata, com nenhum outro escopo do aplicativo — a mesma
+comparação que `iniciar()` usava para reconhecer o retorno.
+
+**Superada pela decisão 19.** O consentimento único resolvia o acesso, mas não
+o problema: mesmo com `Files.ReadWrite` de todo o OneDrive, `special/approot`
+continuou recusando toda tentativa. A decisão 19 substitui completamente este
+mecanismo — `Files.ReadWrite` passa a ser o escopo principal, pedido desde o
+primeiro login, e `ESCOPO_PROVISIONAMENTO_UNICO`,
+`consentirProvisionamentoUnico()`, o modo `bloqueio_pasta_app` e a tela
+`BloqueioPastaApp` foram removidos do código.
 
 ---
 
@@ -569,8 +576,100 @@ mais honesta disponível — inclusive sugerindo esperar e tentar de novo mais
 tarde, já que parte do problema pode estar do lado da Microsoft, fora do
 alcance deste código.
 
-**Trava de regressão.** `tests/graphReal.test.ts` cobre: pasta já existe (sem
-chamada extra); 404 seguido de toque no drive e releitura bem-sucedida; toque
-no drive que também falha, mas a releitura de approot ainda é tentada; 503
-retentado até dar certo; 503 persistente até desistir na terceira tentativa;
-e um erro não transitório (403) que não é retentado.
+**Trava de regressão (na época).** `tests/graphReal.test.ts` cobria: pasta já
+existe (sem chamada extra); 404 seguido de toque no drive e releitura
+bem-sucedida; toque no drive que também falha, mas a releitura de approot
+ainda é tentada; 503 retentado até dar certo; 503 persistente até desistir na
+terceira tentativa; e um erro não transitório (403) que não é retentado.
+
+---
+
+## 19. Pasta comum na raiz, não a pasta especial `special/approot`
+
+**Decisão.** O aplicativo para de usar o mecanismo especial de pasta do
+OneDrive (`special/approot`, autorizado por `Files.ReadWrite.AppFolder`) e
+passa a usar uma pasta comum, com nome fixo (`NOME_PASTA_DO_APP =
+"Central de Chamados"`, em `graphReal.ts`), criada na raiz do drive
+(`root/children`) se ainda não existir. O escopo principal muda de
+`Files.ReadWrite.AppFolder` para **`Files.ReadWrite`** — acesso a todo o
+OneDrive —, pedido desde o primeiro login, não mais como consentimento
+condicional (decisão 15, removida).
+
+**Por quê.** Depois de quatro tentativas de fazer `special/approot` funcionar
+contra a conta real — leitura simples (decisão 14), escrita por caminho
+(decisão 14), criação pelo alias (decisão 17), toque no drive padrão com
+retentativa (decisão 18) —, a causa raiz foi isolada com um teste direto no
+**Graph Explorer**, feito pela pessoa dona da conta:
+
+- `POST /me/drive/special/approot/children` devolveu **405 Method Not
+  Allowed** — não é um método aceito nesse endereço, ponto final. A
+  documentação usada nas decisões 14 e 17 não corresponde à API v1.0 real.
+- `GET /me/drive/special/approot`, testado com a identidade do **próprio**
+  Graph Explorer (client ID diferente do nosso app), devolveu 200 — prova de
+  que a API e a conta funcionam normalmente, mas não prova nada sobre a pasta
+  do *nosso* aplicativo, porque `special/approot` é uma pasta por aplicativo.
+- **`POST /me/drive/root/children`** (pasta comum, endereço padrão, sem
+  alias) devolveu **201 Created** — a mesma conta, a mesma sessão do Graph
+  Explorer, funcionando perfeitamente para o mecanismo comum.
+- Conferido manualmente no OneDrive: a pasta `Apps` existe na raiz da conta,
+  mas está **vazia** — nenhuma tentativa anterior, em nenhuma decisão, chegou
+  a criar nada ali.
+
+A conclusão: o mecanismo especial `special/approot` está com problema nesta
+conta especificamente — causa exata não confirmada (pode ser um bug do lado
+da Microsoft, específico desta conta ou deste período), mas a pasta comum
+funciona, comprovadamente, agora. Depois de tantas tentativas descartadas com
+prova, insistir em `special/approot` deixou de ser um caminho razoável.
+
+**O que isto contraria — e por que a decisão não foi minha.** A especificação
+(secção 15.1) pede o escopo mínimo (`Files.ReadWrite.AppFolder`) e "não
+amplie". Trocar para `Files.ReadWrite` (todo o OneDrive) contraria essa regra
+diretamente e **permanentemente** — não é mais um consentimento condicional
+de uso único (decisão 15, que este código substitui): é o escopo pedido em
+todo login, dali em diante. Por ser uma mudança permanente no modelo de
+privacidade da especificação, e não uma correção técnica dentro dela, a
+decisão foi posta explicitamente para a pessoa dona da conta escolher — ela
+autorizou esta troca depois de ver a prova do Graph Explorer.
+
+**O que continua igual, apesar da permissão mais ampla.** O código só lê e
+grava dentro da pasta com o nome fixo do aplicativo — nunca em outro lugar do
+OneDrive. A interface (`App.tsx`, tela de entrada) e `Configuracoes.tsx`
+passam a dizer isso explicitamente: a permissão técnica cobre o OneDrive
+inteiro, mas o aplicativo se restringe à própria pasta por decisão do código,
+não por um limite que o OAuth imponha — o mesmo padrão de honestidade já
+usado para `Files.Read` (secção 15.3).
+
+**O que foi removido.** `ESCOPO_PASTA_DO_APP` (renomeado para
+`ESCOPO_PRINCIPAL`, valor `Files.ReadWrite`); `ESCOPO_PROVISIONAMENTO_UNICO`;
+`Identidade.consentirProvisionamentoUnico()`; o retorno enriquecido de
+`iniciar()` (`{ conta, tokenProvisionamentoUnico }`, voltou a ser só
+`AccountInfo | null`); o modo `bloqueio_pasta_app`; o componente
+`BloqueioPastaApp`; o campo `autorizarAcessoAmploUnico` do contexto; e todo o
+mecanismo de tocar o drive padrão e retentar em 503 de `GraphReal.approot()`
+(decisão 18) — não faz mais sentido depois que se descartou o mecanismo
+`special/approot` inteiro, não só a forma de bootstrapá-lo.
+
+**Por que uma pasta com nome fixo, e por que "Central de Chamados".** O nome
+aparece na raiz do OneDrive da pessoa, então precisa ser reconhecível — é
+literalmente o nome do aplicativo. Criação usa `conflictBehavior: fail` e o
+mesmo padrão "ler, criar no 404, reler no 409" já usado para as subpastas
+(`obterOuCriar` em `repositorio.ts`) — sem `rename`, para não produzir pastas
+paralelas entre duas sessões inicializando ao mesmo tempo (secção 16.3).
+
+**Consequência para a prova técnica da secção 16.5.** A criação da pasta do
+aplicativo foi confirmada contra a conta real por este mecanismo. O restante
+do protocolo — gravar e reler uma revisão com verificação de SHA-256,
+publicar o ponteiro com `If-Match`, um 412 de conflito real — continua sem
+confirmação.
+
+**Trava de regressão.** `tests/graphReal.test.ts` cobre: leitura direta
+quando a pasta já existe; 404 seguido de criação bem-sucedida pelo nome;
+404 seguido de 409 (outra sessão criou primeiro, relê pelo nome); 404 seguido
+de um erro real na criação (propagado, não a leitura original); e um erro
+não-404 na leitura (403) que não tenta criar nada.
+
+**Superada pela decisão 19.** Mesmo com esta correção publicada, a conta real
+continuou devolvendo 404 em `special/approot` — a hipótese da "inicialização
+pendente" não se confirmou (ou não se resolveu no tempo testado). Um teste
+direto no Graph Explorer, feito pela pessoa dona da conta, encontrou a causa
+real: veja a decisão 19.

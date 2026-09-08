@@ -46,7 +46,16 @@ export interface ItemDrive {
 }
 
 export interface ClienteGraph {
-  /** `GET /me/drive/special/approot` — nunca um ID fixo de outra conta. */
+  /**
+   * Pasta raiz do aplicativo — cria se ainda não existir. Nunca um ID fixo de
+   * outra conta.
+   *
+   * Não é mais o mecanismo especial `special/approot` do OneDrive: uma pasta
+   * comum e nomeada na raiz do drive (`root/children`), depois de confirmar
+   * contra a conta real que `special/approot` não funciona por nenhum método
+   * testado (DECISOES.md §18-19). O nome é fixo e específico do aplicativo —
+   * ver `NOME_PASTA_DO_APP` em `graphReal.ts`.
+   */
   approot(): Promise<ItemDrive>;
 
   filhos(pastaId: string): Promise<ItemDrive[]>;

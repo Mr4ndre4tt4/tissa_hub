@@ -68,7 +68,6 @@ export function App() {
   if (modo === 'conectando') return <Conectando />;
   if (modo === 'sem_base') return <EscolherBase />;
   if (modo === 'recuperacao') return <Recuperacao />;
-  if (modo === 'bloqueio_pasta_app') return <BloqueioPastaApp />;
   if (rota.tela === 'entrada') return <Entrada aoEntrar={() => navegar({ tela: 'dia' })} />;
 
   const rotuloModo =
@@ -234,61 +233,6 @@ function EscolherBase() {
   );
 }
 
-/**
- * A pasta do aplicativo nunca foi criada nesta conta, e a permissão restrita
- * (`Files.ReadWrite.AppFolder`) sozinha não consegue criá-la — limitação
- * conhecida do Microsoft Graph, não deste aplicativo (ver DECISOES.md §15).
- * O consentimento mais amplo só acontece com uma ação explícita da pessoa.
- */
-function BloqueioPastaApp() {
-  const { conta, autorizarAcessoAmploUnico, sair, progresso, erroConexao } = useApp();
-  const [enviando, setEnviando] = useState(false);
-
-  return (
-    <Moldura>
-      <Painel>
-        <h2>A pasta do aplicativo ainda não existe nesta conta</h2>
-        <p>
-          Você está autenticado como <strong>{conta?.email}</strong>, mas a permissão restrita à pasta do aplicativo (
-          <code>Files.ReadWrite.AppFolder</code>) não consegue criá-la sozinha nesta conta — é uma limitação conhecida do próprio
-          Microsoft Graph, não deste aplicativo.
-        </p>
-        <p>
-          Para destravar, é preciso autorizar <strong>uma permissão mais ampla, de acesso a todo o OneDrive</strong> — usada só nesta
-          única vez, para criar a pasta. Depois disso, o aplicativo volta a pedir só a permissão restrita no dia a dia.
-        </p>
-        <p className="rodape-nota">
-          O consentimento concedido à Microsoft para essa permissão mais ampla continua registrado até você mesmo o revogar em{' '}
-          <strong>account.microsoft.com/consent</strong> — o aplicativo não pode revogá-lo por você.
-        </p>
-
-        {erroConexao && <Aviso tipo="atencao">{erroConexao}</Aviso>}
-        {progresso && <Aviso tipo="informacao">{progresso}</Aviso>}
-
-        <div className="acoes-linha" style={{ marginTop: 'var(--e5)' }}>
-          <button
-            type="button"
-            disabled={enviando}
-            onClick={async () => {
-              setEnviando(true);
-              try {
-                await autorizarAcessoAmploUnico();
-              } finally {
-                setEnviando(false);
-              }
-            }}
-          >
-            {enviando ? 'Levando você para a Microsoft…' : 'Autorizar acesso amplo por essa vez'}
-          </button>
-          <button type="button" className="discreto" disabled={enviando} onClick={() => void sair()}>
-            Sair desta conta
-          </button>
-        </div>
-      </Painel>
-    </Moldura>
-  );
-}
-
 /** Ponteiro ausente ou base que não confere: nunca recriar por cima. */
 function Recuperacao() {
   const { erroConexao, recarregar, sair } = useApp();
@@ -346,8 +290,9 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
               </button>
             </div>
             <p className="rodape-nota">
-              Você será levado à tela da Microsoft e voltará para cá. Na primeira vez será pedido o seu consentimento para o aplicativo
-              usar a própria pasta dele no seu OneDrive.
+              Você será levado à tela da Microsoft e voltará para cá. Na primeira vez será pedido o seu consentimento. A permissão
+              concedida cobre o OneDrive inteiro (<code>Files.ReadWrite</code>), não só a pasta do aplicativo — o OAuth não oferece um
+              isolamento mais estreito nesta conta —, mas o aplicativo só lê e grava dentro da própria pasta dele.
             </p>
           </>
         ) : (
