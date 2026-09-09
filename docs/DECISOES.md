@@ -1029,3 +1029,36 @@ decisão 20 nunca dependeu da leitura quebrada). Depois desta correção
 publicada, a expectativa é que o problema pare de **reaparecer** a cada
 mutação — mas isso só é confirmado depois de testar de novo contra a conta
 real, o que a secção 16.5 já cobra e ainda não rodou.
+
+---
+
+## 28. `traduzirErro()` descartava o detalhe no próprio caso "não encontrado"
+
+**O relato.** Ainda contra a conta real, logo depois da correção 27, "Recuperar
+esta" numa revisão listada devolveu "O arquivo esperado não foi encontrado.
+Reveja o vínculo ou use a recuperação." — sem método, caminho, status nem
+`request-id`. Impossível dizer se foi um 404 genuíno no item, um problema de
+propagação (o arquivo acabou de ser criado), ou outra causa qualquer.
+
+**A causa.** `explicar()` (`estado.tsx`) já tinha sido corrigida, sessões
+atrás, para nunca descartar `e.message` num 404 — mas `traduzirErro()`
+(`repositorio.ts`), usada por `salvar()` e por `recuperarApontandoPara()`
+para traduzir `ResultadoSalvar`, é uma função **separada** com o próprio
+`switch`, e o caso `'nao_encontrado'` nunca recebeu o mesmo conserto:
+devolvia sempre a mesma frase genérica, jogando fora exatamente o detalhe
+que `graphReal.ts` já anexa a `e.message` (método, caminho, status, corpo
+do erro da Microsoft, `request-id`).
+
+**Correção.** O caso `'nao_encontrado'` de `traduzirErro()` agora inclui
+`e.message` na resposta, como o `default` do mesmo `switch` já fazia.
+
+**Isto não é a correção do 404 em si.** Continua sem confirmação **por
+quê** o download de uma revisão listada devolveu 404 na conta real — pode
+ser causa nova, pode ser eco da mesma base que já estava presa antes da
+correção 27. Sem o detalhe descartado, a próxima ocorrência traz método,
+caminho e `request-id` para investigar de verdade, em vez de mais uma
+hipótese sem dado.
+
+**Trava de regressão.** `tests/persistencia.test.ts`: `recuperarApontandoPara()`
+contra um `itemId` inexistente devolve `estado: 'erro'` com o `itemId` no
+próprio detalhe — a diferença exata entre esconder e mostrar a causa.

@@ -512,7 +512,13 @@ export class RepositorioOneDrive {
       case 'incerto':
         return { estado: 'incerto', detalhe: 'A confirmação do servidor não chegou. Verifique antes de repetir a operação.' };
       case 'nao_encontrado':
-        return { estado: 'erro', detalhe: 'O arquivo esperado não foi encontrado. Reveja o vínculo ou use a recuperação.' };
+        // Igual à decisão já aplicada em explicar() (estado.tsx): "arquivo não
+        // encontrado" sozinho não diz qual chamada falhou nem carrega o
+        // request-id para correlacionar. e.message já traz método, caminho,
+        // status e o corpo do erro (ver graphReal.ts) — descartá-lo aqui
+        // escondia justamente o que seria preciso para investigar um 404
+        // real na recuperação manual.
+        return { estado: 'erro', detalhe: `O arquivo esperado não foi encontrado. Reveja o vínculo ou use a recuperação. Detalhe: ${e.message}` };
       default:
         return { estado: 'erro', detalhe: `${e.message} Nada foi salvo.` };
     }

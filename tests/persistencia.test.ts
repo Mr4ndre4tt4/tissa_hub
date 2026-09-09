@@ -139,6 +139,25 @@ describe('recuperarApontandoPara — recuperação manual (secção 16.3)', () =
     expect(r.estado).toBe('erro');
     expect((r as { detalhe: string }).detalhe).toMatch(/outra conta/i);
   });
+
+  it('um item que não existe mais traz o detalhe do erro, não só uma frase genérica', async () => {
+    // Relato real: "Recuperar esta" numa revisão listada devolveu 404 na
+    // conta real, mas a mensagem antiga descartava e.message inteiro — sem
+    // método, caminho, status nem request-id, impossível investigar qual
+    // chamada falhou e por quê. Mesma classe de bug já corrigida em
+    // explicar() (tests/erros-autenticacao.test.ts), mas traduzirErro() tinha
+    // o próprio caso separado, sem o mesmo conserto.
+    const graph = new GraphSimulado();
+    const { repo } = await baseInicializada(graph);
+    const { item } = await repo.lerCabeca();
+    await graph.atualizarDescricao(item.id, '', item.eTag);
+
+    const r = await repo.recuperarApontandoPara('item-que-nao-existe-mais');
+    expect(r.estado).toBe('erro');
+    const detalhe = (r as { detalhe: string }).detalhe;
+    expect(detalhe).toMatch(/arquivo esperado não foi encontrado/i);
+    expect(detalhe).toContain('item-que-nao-existe-mais');
+  });
 });
 
 describe('AC-061 — duas sessões disputando a publicação', () => {
