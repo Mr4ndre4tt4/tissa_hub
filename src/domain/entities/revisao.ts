@@ -168,11 +168,30 @@ export function serializarPonteiro(p: RevisionPointer): string {
 
 export function lerPonteiro(texto: string | null | undefined): RevisionPointer | null {
   if (!texto || texto.trim().length === 0) return null;
-  try {
-    const p = JSON.parse(texto) as RevisionPointer;
-    if (p?.version !== 1 || !p.revisionId || !p.workspaceId || !p.itemId || !p.sha256) return null;
-    return p;
-  } catch {
-    return null;
+  // A descrição do OneDrive codifica pontuação como entidades HTML. Fazer
+  // uma única decodificação textual, sem DOM/HTML executável. JSON comum é
+  // tentado primeiro para preservar entidades literais em dados já válidos.
+  const entidades: Record<string, string> = { quot: '"', apos: "'", amp: '&', lt: '<', gt: '>' };
+  const decodificar = (valor: string): string => valor.replace(
+    /&(#x[0-9a-f]+|#[0-9]+|quot|apos|amp|lt|gt);/gi,
+    (entidade: string, codigo: string) => {
+      const chave = codigo.toLowerCase();
+      if (chave[0] !== '#') return entidades[chave]!;
+      const numero = chave.startsWith('#x') ? parseInt(chave.slice(2), 16) : Number(chave.slice(1));
+      return numero > 0 && numero <= 0x10ffff && !(numero >= 0xd800 && numero <= 0xdfff)
+        ? String.fromCodePoint(numero) : entidade;
+    },
+  );
+  let json = texto;
+  for (let tentativa = 0; tentativa < 2; tentativa += 1) {
+    try {
+      const p = JSON.parse(json) as RevisionPointer;
+      if (p?.version !== 1 || ![p.revisionId, p.workspaceId, p.itemId, p.sha256]
+        .every((campo) => typeof campo === 'string' && campo.length > 0)) return null;
+      return p;
+    } catch {
+      if (tentativa === 0) json = decodificar(texto);
+    }
   }
+  return null;
 }
