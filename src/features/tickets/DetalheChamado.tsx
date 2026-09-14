@@ -6,10 +6,11 @@
  * A soma principal nunca inclui duas vezes um apontamento compartilhado.
  */
 
+import { FormularioChamado } from './FormularioChamado';
 import { useState } from 'react';
 import { useApp } from '../../app/estado';
-import { Aviso, Campo, EstadoVazio, EtiquetaCelula, Indicador, Marca, Minutos, Painel } from '../../design/componentes';
-import { CELULAS, ROTULO_CELULA, type Celula, type Uuid } from '../../domain/entities/tipos';
+import { Aviso, EstadoVazio, EtiquetaCelula, Indicador, Marca, Minutos, Painel } from '../../design/componentes';
+import { ROTULO_CELULA, type Uuid } from '../../domain/entities/tipos';
 import { exibirStatusCs3 } from '../../domain/entities/celulas';
 import { esforcoDoTicket } from '../../domain/time/alocacao';
 import { rotularMinutos } from '../../domain/time/duracao';
@@ -22,7 +23,8 @@ const ROTULO_ORIGEM: Record<string, string> = {
 };
 
 export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVoltar: () => void }) {
-  const { revisao, mutar } = useApp();
+  const { revisao } = useApp();
+  const [editando, setEditando] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
   const ticket = revisao.tickets.find((t) => t.id === ticketId);
@@ -44,13 +46,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
   const notas = revisao.notes.filter((n) => n.ticketIds.includes(ticketId));
   const status = exibirStatusCs3(ticket.oficial?.statusBruto, revisao.workspace.mapaStatusCs3);
 
-  const atualizarEstado = (campos: Record<string, unknown>) =>
-    mutar('updatePersonalTicketState', (base) => ({
-      ...base,
-      revisionId: crypto.randomUUID(),
-      parentRevisionId: base.revisionId,
-      personalStates: base.personalStates.map((p) => (p.id === estado?.id ? { ...p, ...campos, atualizadoEm: new Date().toISOString(), versao: p.versao + 1 } : p)),
-    }));
+  if (editando) return <FormularioChamado ticket={ticket} aoCancelar={() => setEditando(false)} aoSalvar={() => setEditando(false)} />;
 
   return (
     <>
@@ -63,6 +59,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
           <p>{estado?.tituloPessoal ?? ticket.oficial?.title ?? 'Sem título'}</p>
         </div>
         <div className="acoes-linha">
+          <button type="button" onClick={() => setEditando(true)}>Editar chamado</button>
           <button
             type="button"
             className="secundario"
@@ -84,8 +81,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
 
       {ticket.provisorio && (
         <Aviso tipo="atencao" titulo="Referência provisória.">
-          Este chamado foi criado a partir de horas registradas na planilha e ainda não tem linha oficial no CS3. Ao importar a extração
-          correspondente, ele será completado sem duplicar.
+          Este chamado foi registrado sem uma extração CS3. Se você importar um CSV com a mesma referência, os dados oficiais serão vinculados a ele.
         </Aviso>
       )}
 
@@ -142,49 +138,22 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
 
       <Painel titulo="Meu acompanhamento">
         {!estado ? (
-          <EstadoVazio titulo="Sem acompanhamento pessoal">Nenhum registro pessoal foi importado ou criado para este chamado.</EstadoVazio>
+          <EstadoVazio titulo="Comece o acompanhamento">Use <strong>Editar chamado</strong> para adicionar título, andamento, responsável e próxima ação.</EstadoVazio>
         ) : (
           <>
             <Aviso tipo="informacao">
               Estes campos são seus. Editá-los não altera a origem nem o CS3, e o atualizador de dados oficiais nunca os sobrescreve.
             </Aviso>
-            <div className="grade grade-2">
-              <Campo rotulo="Título pessoal">
-                {(p) => <input {...p} defaultValue={estado.tituloPessoal ?? ''} onBlur={(e) => void atualizarEstado({ tituloPessoal: e.target.value || null })} />}
-              </Campo>
-              <Campo rotulo="Próxima ação">
-                {(p) => <input {...p} defaultValue={estado.proximaAcao ?? ''} onBlur={(e) => void atualizarEstado({ proximaAcao: e.target.value || null })} />}
-              </Campo>
-              <Campo rotulo="Prazo pessoal" ajuda="Prazo definido por você. Não é SLA oficial.">
-                {(p) => <input {...p} type="date" defaultValue={estado.prazo ?? ''} onBlur={(e) => void atualizarEstado({ prazo: e.target.value || null })} />}
-              </Campo>
-              <Campo rotulo="Andamento pessoal">
-                {(p) => <input {...p} defaultValue={estado.andamentoPessoal ?? ''} onBlur={(e) => void atualizarEstado({ andamentoPessoal: e.target.value || null })} />}
-              </Campo>
-              <Campo rotulo="Célula manual" ajuda="A célula manual prevalece sobre a sugerida pelas tags.">
-                {(p) => (
-                  <select {...p} defaultValue={estado.celulaManual ?? ''} onChange={(e) => void atualizarEstado({ celulaManual: (e.target.value || null) as Celula | null })}>
-                    <option value="">Sem célula manual</option>
-                    {CELULAS.map((c) => (
-                      <option key={c} value={c}>
-                        {ROTULO_CELULA[c]}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </Campo>
-              <Campo rotulo="Estimativa (minutos)" ajuda='"Sem estimativa" não é zero. A estimativa só entra nos indicadores depois de confirmada.'>
-                {(p) => (
-                  <input
-                    {...p}
-                    type="number"
-                    min={0}
-                    defaultValue={estado.estimativaMinutos ?? ''}
-                    onBlur={(e) => void atualizarEstado({ estimativaMinutos: e.target.value === '' ? null : Number(e.target.value), estimativaConfirmada: e.target.value !== '' })}
-                  />
-                )}
-              </Campo>
-            </div>
+            <dl className="resumo-acompanhamento">
+              <div><dt>Título</dt><dd>{estado.tituloPessoal ?? ticket.oficial?.title ?? '—'}</dd></div>
+              <div><dt>Andamento pessoal</dt><dd>{estado.andamentoPessoal ?? '—'}</dd></div>
+              <div><dt>Prioridade pessoal</dt><dd>{estado.prioridadePessoal ?? '—'}</dd></div>
+              <div><dt>Responsável pessoal</dt><dd>{estado.responsavelPessoal ?? '—'}</dd></div>
+              <div><dt>Próxima ação</dt><dd>{estado.proximaAcao ?? '—'}</dd></div>
+              <div><dt>Prazo pessoal</dt><dd>{estado.prazo ?? '—'}</dd></div>
+              <div><dt>Célula</dt><dd>{ROTULO_CELULA[estado.celulaManual ?? estado.celulaSugerida ?? 'UNCLASSIFIED']}</dd></div>
+              <div><dt>Estimativa</dt><dd>{estado.estimativaMinutos == null ? 'Sem estimativa' : rotularMinutos(estado.estimativaMinutos)}</dd></div>
+            </dl>
 
             {estado.celulaSugerida && estado.celulaManual && estado.celulaSugerida !== estado.celulaManual && (
               <Aviso tipo="atencao" titulo="Divergência de célula:">

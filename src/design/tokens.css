@@ -699,3 +699,26 @@ code,
   min-width: 0;
   max-width: 100%;
 }
+
+/* Entrada enxuta, com uma ação principal e detalhes sob demanda. */
+.pagina-login { min-height: 100%; display: grid; place-items: center; padding: var(--e5); }
+.cartao-login { width: 100%; max-width: 460px; padding: var(--e6); border: 1px solid var(--linha); border-radius: var(--raio-painel); text-align: center; }
+.cartao-login h1 { font-size: 28px; }
+.simbolo-login { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto var(--e5); border-radius: 12px; background: var(--mint-frost); font-size: 26px; font-weight: 600; }
+.descricao-login { color: var(--text-muted); margin: var(--e3) 0 var(--e6); }
+.botao-login { width: 100%; }
+.demonstracao-login { margin: var(--e3) 0 var(--e5); }
+.detalhes-login { text-align: left; border-top: 1px solid var(--linha); padding-top: var(--e4); font-size: 14px; color: var(--text-muted); }
+.detalhes-login summary { cursor: pointer; min-height: 32px; }
+.formulario-chamado { border: 0; padding: 0; margin: 0; min-width: 0; }
+.formulario-chamado .campo { margin-bottom: var(--e4); }
+.formulario-chamado input[readonly] { color: var(--text-muted); }
+.resumo-acompanhamento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e5); }
+.resumo-acompanhamento dt { color: var(--text-muted); font-size: 14px; }
+.resumo-acompanhamento dd { margin: var(--e1) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .pagina-login { padding: var(--e4); }
+  .cartao-login { padding: var(--e5); }
+  .cartao-login h1 { font-size: 24px; }
+  .resumo-acompanhamento { grid-template-columns: 1fr; }
+}

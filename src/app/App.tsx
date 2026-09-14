@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp, usarMensagemDeGravacao, type ModoDeOperacao } from './estado';
-import { Aviso, EstadoVazio, Painel } from '../design/componentes';
+import { Aviso, Painel } from '../design/componentes';
 import { integracaoConfigurada } from '../adapters/identity/msal';
 import { MeuDia } from '../features/day/MeuDia';
 import { Chamados } from '../features/tickets/Chamados';
@@ -169,7 +169,7 @@ function Tela({ rota, navegar, aoSair }: { rota: Rota; navegar: (r: Rota) => voi
     case 'chamados':
       return <Chamados aoAbrir={(id) => navegar({ tela: 'chamado', id })} />;
     case 'chamado':
-      return <DetalheChamado ticketId={rota.id} aoVoltar={() => navegar({ tela: 'chamados' })} />;
+      return <DetalheChamado key={rota.id} ticketId={rota.id} aoVoltar={() => navegar({ tela: 'chamados' })} />;
     case 'dashboard':
       return <Dashboard />;
     case 'planejamento':
@@ -357,69 +357,31 @@ function Entrada({ aoEntrar }: { aoEntrar: () => void }) {
   const { config, entrarNoModoDemonstrativo, entrarComMicrosoft, erroConexao } = useApp();
   const configurada = integracaoConfigurada(config);
 
+  const [entrando, setEntrando] = useState(false);
   return (
-    <Moldura>
-      <Painel>
-        <h2>Entrar</h2>
-        <p>
-          Seus dados ficam no <strong>seu OneDrive pessoal</strong>, na pasta do aplicativo. Nada é guardado num servidor deste projeto e
-          não existe formulário de senha aqui: a autenticação é feita pela própria Microsoft.
-        </p>
-
-        {erroConexao && <Aviso tipo="atencao" titulo="Última tentativa falhou.">{erroConexao}</Aviso>}
-
+    <main className="pagina-login">
+      <section className="cartao-login" aria-labelledby="titulo-login">
+        <div className="simbolo-login" aria-hidden="true">✓</div>
+        <h1 id="titulo-login">Central de Chamados</h1>
+        <p className="descricao-login">Seus chamados e seu dia de trabalho, em um só lugar.</p>
+        {erroConexao && <Aviso tipo="atencao" titulo="Não foi possível entrar.">{erroConexao}</Aviso>}
         {configurada ? (
           <>
-            <div className="acoes-linha" style={{ marginTop: 'var(--e5)' }}>
-              <button type="button" onClick={() => void entrarComMicrosoft()}>
-                Entrar com Microsoft
-              </button>
-              <button type="button" className="secundario" onClick={() => { entrarNoModoDemonstrativo(); aoEntrar(); }}>
-                Ver a demonstração
-              </button>
-            </div>
-            <p className="rodape-nota">
-              Você será levado à tela da Microsoft e voltará para cá. Na primeira vez será pedido o seu consentimento. A permissão
-              concedida cobre o OneDrive inteiro (<code>Files.ReadWrite</code>), não só a pasta do aplicativo — o OAuth não oferece um
-              isolamento mais estreito nesta conta —, mas o aplicativo só lê e grava dentro da própria pasta dele.
-            </p>
+            <button className="botao-login" type="button" disabled={entrando} onClick={async () => {
+              setEntrando(true);
+              try { await entrarComMicrosoft(); } finally { setEntrando(false); }
+            }}>{entrando ? 'Conectando…' : 'Entrar com Microsoft'}</button>
+            <p className="rodape-nota">Use sua conta Microsoft pessoal. Seus dados ficam no seu OneDrive.</p>
           </>
-        ) : (
-          <>
-            <Aviso tipo="atencao" titulo="Integração Microsoft não configurada.">
-              Falta informar o <strong>client ID</strong> e o <strong>redirect URI</strong> de um registro de aplicativo Microsoft que
-              aceite contas pessoais. Enquanto isso, o login está desativado — este aplicativo não simula uma conexão.
-            </Aviso>
-            <p>Você pode conhecer a interface com dados inventados, claramente separados de qualquer base real:</p>
-            <div className="acoes-linha">
-              <button type="button" className="secundario" onClick={() => { entrarNoModoDemonstrativo(); aoEntrar(); }}>
-                Abrir o modo demonstrativo
-              </button>
-            </div>
-            <p className="rodape-nota">
-              No modo demonstrativo nenhuma alteração é gravada em lugar nenhum, e o aplicativo nunca dirá “Salvo no OneDrive”.
-            </p>
-          </>
-        )}
-      </Painel>
-
-      <Painel titulo="O que ainda depende de configuração">
-        <ul>
-          <li>Consentimento da sua conta para o aplicativo usar a própria pasta no OneDrive.</li>
-          <li>A prova técnica de gravação e concorrência na conta real (secção 16.5).</li>
-          <li>Vínculo com a planilha no OneDrive e o fuso das extrações CS3.</li>
-          <li>Regras de calendário e de follow-up, e a conciliação dos históricos.</li>
-          <li>Licença e arquivo da fonte Magnetik — até lá, o fallback do sistema fica em uso e declarado.</li>
-        </ul>
-      </Painel>
-
-      {!configurada && (
-        <Painel>
-          <EstadoVazio titulo="Nada foi conectado ainda">
-            Nenhuma conta Microsoft foi autenticada e nenhum dado saiu deste navegador.
-          </EstadoVazio>
-        </Painel>
-      )}
-    </Moldura>
+        ) : <Aviso tipo="atencao" titulo="Login indisponível.">A integração Microsoft ainda precisa ser configurada.</Aviso>}
+        <button type="button" className="discreto demonstracao-login" onClick={() => { entrarNoModoDemonstrativo(); aoEntrar(); }}>Ver a demonstração</button>
+        <details className="detalhes-login">
+          <summary>Sobre o acesso aos seus dados</summary>
+          <p>O login é feito pela Microsoft. O aplicativo usa a pasta Central de Chamados no seu OneDrive pessoal para salvar e recuperar seus registros.</p>
+          <p>A permissão solicitada permite ler e gravar arquivos no OneDrive inteiro, mas o aplicativo limita seu uso à própria pasta. Nenhum dado é guardado em um servidor deste projeto.</p>
+          <p>A demonstração usa dados fictícios e não grava no OneDrive.</p>
+        </details>
+      </section>
+    </main>
   );
 }
