@@ -31,6 +31,14 @@ function baseVazia(): Revision {
   return revisaoInicial(novoWorkspace('Base de teste'));
 }
 
+it('recusa uma prévia quando a revisão remota mudou antes de aplicar', () => {
+  const base = baseVazia();
+  const previa = previaCsv(base, doc(), lerCsvCs3(csvIncidentes(['IR90001001;Título;Working;04/09/2026 14:00:00;AMS;BASELINE'])));
+  const remota = { ...base, revisionId: crypto.randomUUID() };
+  expect(() => aplicarPrevia(remota, previa, aceitarPadrao(previa), 'op')).toThrow(/base mudou/i);
+  expect(remota.tickets).toHaveLength(0);
+});
+
 /** Aceita todos os itens marcados por padrão. */
 function aceitarPadrao(previa: Previa): DecisoesDaCarga {
   return {

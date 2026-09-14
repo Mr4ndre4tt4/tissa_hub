@@ -1,4 +1,20 @@
 import { describe, expect, it } from 'vitest';
+
+describe('integridade estrutural do CSV', () => {
+  it.each(['ID;"titulo"sobrou;Open;14/09/2026 08:00:00', 'ID;titu"lo;Open;14/09/2026 08:00:00'])(
+    'bloqueia aspas malformadas: %s', (linha) => {
+      expect(() => analisarCsv(linha)).toThrow();
+    },
+  );
+  it.each(['ID;Titulo;Open;14/09/2026 08:00:00;EXTRA', 'ID;Titulo;Open'])(
+    'bloqueia quantidade de colunas diferente do cabeçalho: %s', (linha) => {
+      expect(() => lerCsvCs3('Incident ID;Title;Status;Last Update Time\n' + linha)).toThrow(/colunas|campos/i);
+    },
+  );
+  it('aceita quebras CR sem juntar registros', () => {
+    expect(analisarCsv('a;b\rc;d')).toEqual([{ linha: 1, campos: ['a', 'b'] }, { linha: 2, campos: ['c', 'd'] }]);
+  });
+});
 import { analisarCsv, detectarPerfil, ErroDeCsv, lerCsvCs3 } from '../src/domain/sources/csv';
 
 const CAB_INC =

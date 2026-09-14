@@ -34,6 +34,7 @@ export function analisarCsv(texto: string, delimitador = ';'): LinhaCsv[] {
   let campos: string[] = [];
   let atual = '';
   let dentroDeAspas = false;
+  let fechouAspas = false;
   let linhaFisica = 1;
   let linhaInicioRegistro = 1;
   let temConteudo = false;
@@ -48,6 +49,7 @@ export function analisarCsv(texto: string, delimitador = ';'): LinhaCsv[] {
           i += 1;
         } else {
           dentroDeAspas = false;
+          fechouAspas = true;
         }
       } else {
         if (c === '\n') linhaFisica += 1; // quebra de linha dentro do campo
@@ -56,25 +58,31 @@ export function analisarCsv(texto: string, delimitador = ';'): LinhaCsv[] {
       continue;
     }
 
+    if (fechouAspas && c !== delimitador && c !== '\r' && c !== '\n') {
+      throw new ErroDeCsv(`Linha ${linhaFisica}: conteúdo depois do fechamento das aspas.`);
+    }
     if (c === '"' && atual.length === 0) {
       dentroDeAspas = true;
       temConteudo = true;
       continue;
     }
+    if (c === '"') throw new ErroDeCsv(`Linha ${linhaFisica}: aspas dentro de um campo sem delimitá-lo.`);
     if (c === delimitador) {
       campos.push(atual);
       atual = '';
+      fechouAspas = false;
       temConteudo = true;
       continue;
     }
-    if (c === '\r') continue;
-    if (c === '\n') {
+    if (c === '\n' || c === '\r') {
+      if (c === '\r' && conteudo[i + 1] === '\n') i += 1;
       campos.push(atual);
       if (temConteudo || campos.length > 1 || campos[0] !== '') {
         linhas.push({ linha: linhaInicioRegistro, campos });
       }
       campos = [];
       atual = '';
+      fechouAspas = false;
       linhaFisica += 1;
       linhaInicioRegistro = linhaFisica;
       temConteudo = false;
@@ -235,6 +243,9 @@ export function lerCsvCs3(texto: string): ResultadoLeituraCsv {
 
   for (const { linha, campos } of linhas.slice(1)) {
     if (campos.every((c) => c.trim() === '')) continue;
+    if (campos.length !== cabecalho.length) {
+      throw new ErroDeCsv(`Linha ${linha}: ${campos.length} campos, mas o cabeçalho tem ${cabecalho.length} colunas. Verifique o separador e as aspas; a carga não foi aplicada.`);
+    }
 
     const problemas: string[] = [];
     const id = texto0(campos, perfil.chave);
