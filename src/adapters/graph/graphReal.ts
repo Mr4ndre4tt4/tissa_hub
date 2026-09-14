@@ -206,17 +206,33 @@ export class GraphReal implements ClienteGraph {
     // necessária" reaparecendo depois de qualquer apontamento ou importação
     // na conta real (DECISOES.md §27).
     //
-    // O mesmo `$select` também precisa da faceta `file`, não só `folder`.
-    // Sem ela, o Graph (contas pessoais) pode devolver o item sem
-    // `@microsoft.graph.downloadUrl` mesmo quando o arquivo existe e não
-    // está corrompido — `baixarConteudo()` então lê "não expôs uma URL de
-    // download" e a pessoa cai em "Recuperação necessária" outra vez, desta
-    // vez ao tentar abrir a revisão ativa ou recuperar uma revisão listada,
-    // não ao ler o ponteiro. Mesma classe de bug do §27, faceta diferente.
+    // ESTE `$select` propositalmente NÃO pede `@microsoft.graph.downloadUrl`.
+    // Uma tentativa anterior incluiu a anotação aqui (junto com `file`), na
+    // suposição de que faltava a faceta certa — mas o mesmo erro ("não
+    // expôs uma URL de download") reapareceu contra a conta real, inclusive
+    // numa revisão criada minutos antes pelo próprio aplicativo. Ou seja: o
+    // problema não é qual faceta falta, é misturar `@microsoft.graph.
+    // downloadUrl` com qualquer `$select` explícito nesta conta — a leitura
+    // de conteúdo (`baixarConteudo()`) usa `obterUrlDeDownload()`, uma
+    // chamada própria e sem `$select`, exatamente por isto.
     const r = await this.requisitar(
-      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,file,folder,@microsoft.graph.downloadUrl`,
+      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,file,folder`,
     );
     return paraItem((await r.json()) as RespostaItem);
+  }
+
+  /**
+   * Lê só a URL de download, numa chamada separada e sem `$select`. Ver o
+   * comentário em `obterItem()`: nesta conta, `@microsoft.graph.downloadUrl`
+   * não veio de forma confiável quando combinada com um `$select` explícito
+   * — mesmo listando a própria anotação — mas uma leitura simples do item,
+   * sem restringir campos, deve trazer a anotação por padrão (comportamento
+   * documentado pela Microsoft para itens de arquivo).
+   */
+  private async obterUrlDeDownload(itemId: string): Promise<string | undefined> {
+    const r = await this.requisitar(`/me/drive/items/${encodeURIComponent(itemId)}`);
+    const corpo = (await r.json()) as RespostaItem;
+    return corpo['@microsoft.graph.downloadUrl'];
   }
 
   async enviarConteudo(paiId: string, nome: string, bytes: Uint8Array): Promise<ItemDrive> {
@@ -234,9 +250,10 @@ export class GraphReal implements ClienteGraph {
 
   async baixarConteudo(itemId: string): Promise<Uint8Array> {
     // Ler os metadados primeiro evita o problema de redirecionamento CORS de
-    // `/content` em aplicações JavaScript (M3).
-    const item = await this.obterItem(itemId);
-    if (!item.downloadUrl) {
+    // `/content` em aplicações JavaScript (M3). `obterUrlDeDownload()` faz essa
+    // leitura sem `$select` — ver o comentário lá para o porquê.
+    const downloadUrl = await this.obterUrlDeDownload(itemId);
+    if (!downloadUrl) {
       throw new ErroGraph('O item não expôs uma URL de download.', 'nao_encontrado', 404);
     }
 
@@ -244,7 +261,7 @@ export class GraphReal implements ClienteGraph {
     try {
       // A URL temporária é pré-autenticada: o bearer token NÃO é anexado a ela,
       // e ela não é guardada em estado, log nem repositório.
-      resposta = await fetch(item.downloadUrl);
+      resposta = await fetch(downloadUrl);
     } catch (e) {
       // Só o domínio da URL de download entra na mensagem — nunca o caminho
       // nem a query string, que carregam a autenticação temporária. Sem isso,
@@ -253,7 +270,7 @@ export class GraphReal implements ClienteGraph {
       // qual domínio precisava ser liberado.
       let origem = '';
       try {
-        origem = ` (origem: ${new URL(item.downloadUrl).host})`;
+        origem = ` (origem: ${new URL(downloadUrl).host})`;
       } catch {
         // URL malformada: segue sem o domínio em vez de falhar por isto.
       }

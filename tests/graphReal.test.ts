@@ -16,7 +16,9 @@
  *  - `baixarConteudo()` inclui o domínio (nunca o caminho nem a query, que
  *    carregam a autenticação temporária) da URL de download quando a rede
  *    falha — sem isso, "Failed to fetch" sozinho não diz qual domínio
- *    precisaria ser liberado numa política de segurança restritiva.
+ *    precisaria ser liberado numa política de segurança restritiva. A leitura
+ *    da própria URL de download é feita sem `$select` — ver o teste dedicado
+ *    logo abaixo para o porquê;
  *  - `obterItem()` pede `description` explicitamente com `$select` — a
  *    Microsoft não devolve essa propriedade numa leitura simples de
  *    driveItem (comportamento documentado). Sem isso, `lerCabeca()` lia
@@ -235,6 +237,36 @@ describe('GraphReal — baixarConteudo() identifica o domínio quando a rede fal
 
     const graph = new GraphReal(TOKEN);
     await expect(graph.baixarConteudo('item-x')).rejects.toMatchObject({ codigo: 'nao_encontrado' });
+  });
+
+  it('lê a URL de download sem `$select` — nunca combinada com outros campos', async () => {
+    // Reprodução do bug real: mesmo listando explicitamente
+    // `@microsoft.graph.downloadUrl` num `$select` com outros campos (`file`,
+    // `folder` etc.), a Microsoft devolveu o item sem a anotação contra a
+    // conta real — inclusive numa revisão criada minutos antes pelo próprio
+    // aplicativo. `baixarConteudo()` precisa pedir só a URL de download,
+    // numa leitura simples do item, sem `$select` nenhum.
+    const chamadas: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        chamadas.push(url);
+        return new Response(
+          JSON.stringify({ id: 'item-x', name: 'x.json', '@microsoft.graph.downloadUrl': 'https://files.1drv.com/x' }),
+          { status: 200 },
+        );
+      }),
+    );
+
+    const graph = new GraphReal(TOKEN);
+    // A segunda chamada (baixar o conteúdo em si) falha por não estar mockada
+    // com essa URL exata — não importa aqui; só a primeira chamada (metadados)
+    // é o que este teste verifica.
+    await graph.baixarConteudo('item-x').catch(() => {});
+
+    expect(chamadas.length).toBeGreaterThanOrEqual(1);
+    const url = new URL(chamadas[0]!);
+    expect(url.searchParams.has('$select')).toBe(false);
   });
 });
 
