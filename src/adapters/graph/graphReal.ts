@@ -205,8 +205,16 @@ export class GraphReal implements ClienteGraph {
     // a publicação confirmada — a causa real por trás de "Recuperação
     // necessária" reaparecendo depois de qualquer apontamento ou importação
     // na conta real (DECISOES.md §27).
+    //
+    // O mesmo `$select` também precisa da faceta `file`, não só `folder`.
+    // Sem ela, o Graph (contas pessoais) pode devolver o item sem
+    // `@microsoft.graph.downloadUrl` mesmo quando o arquivo existe e não
+    // está corrompido — `baixarConteudo()` então lê "não expôs uma URL de
+    // download" e a pessoa cai em "Recuperação necessária" outra vez, desta
+    // vez ao tentar abrir a revisão ativa ou recuperar uma revisão listada,
+    // não ao ler o ponteiro. Mesma classe de bug do §27, faceta diferente.
     const r = await this.requisitar(
-      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,folder,@microsoft.graph.downloadUrl`,
+      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,file,folder,@microsoft.graph.downloadUrl`,
     );
     return paraItem((await r.json()) as RespostaItem);
   }
