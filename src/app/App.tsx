@@ -6,10 +6,11 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useApp, usarMensagemDeGravacao, type ModoDeOperacao } from './estado';
+import { useApp, hojeLocal, usarMensagemDeGravacao, type ModoDeOperacao } from './estado';
 import { Aviso, Painel } from '../design/componentes';
 import { integracaoConfigurada } from '../adapters/identity/msal';
 import { MeuDia } from '../features/day/MeuDia';
+import { ProvedorListaChamados } from '../features/tickets/estadoLista';
 import { Chamados } from '../features/tickets/Chamados';
 import { DetalheChamado } from '../features/tickets/DetalheChamado';
 import { Dashboard } from '../features/dashboard/Dashboard';
@@ -65,7 +66,7 @@ export function deveMostrarEntrada(modo: ModoDeOperacao, rotaTela: Rota['tela'])
 }
 
 export function App() {
-  const { modo, conta, sair } = useApp();
+  const { modo, conta, sair, revisao, dataSelecionada } = useApp();
   const [rota, setRota] = useState<Rota>(lerRota);
 
   useEffect(() => {
@@ -102,6 +103,7 @@ export function App() {
     modo === 'conectado' ? conta?.email ?? 'OneDrive pessoal' : modo === 'demonstrativo' ? 'Modo demonstrativo' : 'Sem conexão';
 
   return (
+    <ProvedorListaChamados key={`${modo}:${revisao.workspace.id}`} dataReferencia={modo === 'demonstrativo' ? dataSelecionada : hojeLocal()}>
     <div className="aplicacao">
       <nav className="lateral" aria-label="Navegação principal">
         <div className="assinatura">
@@ -136,6 +138,7 @@ export function App() {
         <Tela rota={rota} navegar={navegar} aoSair={aoSair} />
       </main>
     </div>
+    </ProvedorListaChamados>
   );
 }
 

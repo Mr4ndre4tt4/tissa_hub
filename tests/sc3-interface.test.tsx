@@ -23,7 +23,7 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
 async function renderizar() { await act(async () => root.render(<FormularioSc3 ticket={estado.ctx.revisao.tickets[0]!} aoFechar={fechou} />)); }
 function input(rotulo: string) { const label = [...host.querySelectorAll('label')].find(l => l.textContent?.startsWith(rotulo))!; return document.getElementById(label.htmlFor) as HTMLInputElement; }
-async function preencher(rotulo: string, value: string) { await act(async () => { const el = input(rotulo); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); }); }
+async function preencher(rotulo: string, value: string) { await act(async () => { const el = input(rotulo); const select = el.tagName === 'SELECT'; Object.getOwnPropertyDescriptor(select ? HTMLSelectElement.prototype : HTMLInputElement.prototype, 'value')!.set!.call(el, value); el.dispatchEvent(new Event(select ? 'change' : 'input', { bubbles: true })); }); }
 async function submit() { await act(async () => host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))); }
 it.each(['erro','incerto','conflito','invalido','nao_autorizado','quota'] as const)('mantém dados SC3 no formulário em %s', async resultado => {
  estado.ctx.mutar = vi.fn(async () => resultado); await preencher('Título SC3', 'Correção SC3'); await submit();
@@ -31,9 +31,9 @@ it.each(['erro','incerto','conflito','invalido','nao_autorizado','quota'] as con
 });
 it('grava título, status, responsável e tags somente ao salvar', async () => {
  estado.ctx.mutar = vi.fn<ContextoApp['mutar']>(async (_op, mudar) => { estado.ctx.revisao = mudar(estado.ctx.revisao); return 'confirmado'; });
- await preencher('Título SC3', 'Correção SC3'); await preencher('Status SC3', 'Updated'); await preencher('Responsável', 'Pessoa teste'); await preencher('Tag 3', 'TASK FORCE');
+ await preencher('Título SC3', 'Correção SC3'); await preencher('Status SC3', 'Update'); await preencher('Responsável', 'Pessoa teste'); await preencher('Tag 3', 'TASK FORCE');
  expect(estado.ctx.mutar).not.toHaveBeenCalled(); await submit(); expect(fechou).toHaveBeenCalledTimes(1);
- expect(estado.ctx.revisao.tickets[0]!.oficial).toMatchObject({ title: 'Correção SC3', statusBruto: 'Updated', assignedTo: 'Pessoa teste', tags: [null,null,'TASK FORCE',null,null,null] });
+ expect(estado.ctx.revisao.tickets[0]!.oficial).toMatchObject({ title: 'Correção SC3', statusBruto: 'Update', assignedTo: 'Pessoa teste', tags: [null,null,'TASK FORCE',null,null,null] });
 });
 it('cancelar não salva; envio duplo é bloqueado', async () => {
  await preencher('Título SC3', 'Descartar'); await act(async () => [...host.querySelectorAll('button')].find(b => b.textContent === 'Cancelar')!.click());
@@ -54,4 +54,21 @@ it('detalhe oferece edição dos dados SC3 e não exibe o nome antigo', async ()
  await act(async () => root.render(<DetalheChamado ticketId="ticket" aoVoltar={fechou} />));
  expect(host.textContent).toContain('Editar dados SC3'); expect(host.textContent).not.toContain('CS3');
  expect(host.textContent).not.toContain('não são editáveis');
+});
+
+it.each(['Waiting External','Waiting User','Went On Fulfillment','Update','Working','Resolved','Closed'])('salva o status selecionado %s', async status => {
+ estado.ctx.mutar = vi.fn<ContextoApp['mutar']>(async (_op, mudar) => { estado.ctx.revisao = mudar(estado.ctx.revisao); return 'confirmado'; });
+ const select = input('Status SC3') as unknown as HTMLSelectElement;
+ expect(select.tagName).toBe('SELECT');
+ expect([...select.options].map(o => o.value)).toEqual(['','Waiting External','Waiting User','Went On Fulfillment','Update','Working','Resolved','Closed']);
+ await preencher('Status SC3', status); await submit();
+ expect(estado.ctx.revisao.tickets[0]!.oficial!.statusBruto).toBe(status);
+});
+it('preserva um status legado até a pessoa escolher outra opção', async () => {
+ estado.ctx.revisao.tickets[0]!.oficial!.statusBruto = 'Wait on User';
+ await act(async () => root.unmount()); root = createRoot(host); await renderizar();
+ expect(input('Status SC3').value).toBe('Wait on User'); expect(host.textContent).toContain('Wait on User (valor atual)');
+ estado.ctx.mutar = vi.fn<ContextoApp['mutar']>(async (_op, mudar) => { estado.ctx.revisao = mudar(estado.ctx.revisao); return 'confirmado'; });
+ await preencher('Responsável', 'Pessoa nova'); await submit();
+ expect(estado.ctx.revisao.tickets[0]!.oficial!.statusBruto).toBe('Wait on User');
 });

@@ -17,6 +17,7 @@ import type {
 import { contaParaJornada, metaDaData, saldoDoDia, type SaldoDoDia } from '../time/jornada';
 import { esforcoDoTicket, reconciliarTotais, totaisPorCelula } from '../time/alocacao';
 import { diferencaEmDias, enumerarPeriodo } from '../time/datas';
+import { normalizarStatusSc3 } from '../entities/statusSc3';
 import { exibirStatusCs3 } from '../entities/celulas';
 
 export interface Periodo {
@@ -125,6 +126,7 @@ export function esforcoPorChamado(r: Revision, p: Periodo): EsforcoPorChamado[] 
 
 export interface ContagemPorStatus {
   rotulo: string;
+  /** Chave do grupo; grafias legadas SC3 equivalentes usam o status canônico. */
   bruto: string;
   quantidade: number;
   naoMapeado: boolean;
@@ -146,7 +148,7 @@ export function chamadosPorStatus(r: Revision): ChamadosPorStatus {
       provisorios += 1;
       continue;
     }
-    const bruto = t.oficial?.statusBruto ?? '';
+    const bruto = normalizarStatusSc3(t.oficial?.statusBruto ?? '');
     oficial.set(bruto, (oficial.get(bruto) ?? 0) + 1);
   }
 
