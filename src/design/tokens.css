@@ -722,3 +722,5 @@ code,
   .cartao-login h1 { font-size: 24px; }
   .resumo-acompanhamento { grid-template-columns: 1fr; }
 }
+.outros-campos-sc3 { margin: var(--e4) 0 var(--e5); }
+.outros-campos-sc3 summary { cursor: pointer; padding: var(--e3) 0; font-weight: var(--peso-enfase); }

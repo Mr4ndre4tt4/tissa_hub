@@ -161,7 +161,7 @@ export function MeuDia() {
                           <span className="marca marca-atencao">Incompleto</span>
                         )}
                         {e.lancamentoExterno === 'reported_posted' && (
-                          <div className="marca" style={{ marginTop: 'var(--e1)' }} title="Anotação pessoal importada. Não é confirmação de integração com o CS3.">
+                          <div className="marca" style={{ marginTop: 'var(--e1)' }} title="Anotação pessoal importada. Não é confirmação de integração com o SC3.">
                             Lançado (anotação pessoal)
                           </div>
                         )}
@@ -245,7 +245,7 @@ export interface DadosFormulario {
 /**
  * Encontra o chamado já cadastrado para a referência ou cria um provisório
  * (secção 8.5): horas apontadas contra um chamado que ainda não foi
- * importado do CS3 não podem ficar órfãs — a extração oficial completa o
+ * importado do SC3 não podem ficar órfãs — a extração oficial completa o
  * provisório depois, sem duplicar (ver domain/reconciliation/importacao.ts,
  * que já sabia tratar `provisorio`, mas nada nunca criava um).
  */
@@ -493,9 +493,9 @@ function FormularioApontamento({
           onChange={(e) => setDados({ ...dados, lancamentoExterno: e.target.checked })}
         />
         <span>
-          Já lancei estas horas no CS3 por fora
+          Já lancei estas horas no SC3 por fora
           <span className="ajuda" style={{ display: 'block' }}>
-            Anotação pessoal sua. Este aplicativo não envia horas ao CS3 e não verifica esse lançamento.
+            Anotação pessoal sua. Este aplicativo não envia horas ao SC3 e não verifica esse lançamento.
           </span>
         </span>
       </label>

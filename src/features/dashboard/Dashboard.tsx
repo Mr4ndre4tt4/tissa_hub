@@ -87,7 +87,7 @@ export function Dashboard() {
       <Aviso tipo="informacao" titulo="Origem dos números:">
         Dados atualizados até a última importação
         {ultimaImportacao ? ` (${ultimaImportacao.slice(0, 10)})` : ' — nenhuma importação registrada'}. Não há leitura em tempo real do
-        CS3. Estas medidas são de acompanhamento pessoal e não são indicadores oficiais de SLA.
+        SC3. Estas medidas são de acompanhamento pessoal e não são indicadores oficiais de SLA.
       </Aviso>
 
       <Painel>
@@ -262,7 +262,7 @@ export function Dashboard() {
               </div>
               <p className="rodape-nota">
                 Estas são resoluções <strong>pessoais conhecidas</strong>, registradas por você ou importadas da planilha. Não são
-                indicadores oficiais de SLA nem o histórico integral do CS3.
+                indicadores oficiais de SLA nem o histórico integral do SC3.
               </p>
             </Painel>
           </div>
@@ -307,7 +307,7 @@ export function Dashboard() {
       <Painel titulo="Exportar conferência">
         <p>
           A exportação traz a duração em minutos e o rótulo legível. Textos que poderiam ser interpretados como fórmula saem como texto.
-          Exportar não envia horas ao CS3.
+          Exportar não envia horas ao SC3.
         </p>
         <div className="acoes-linha">
           <button

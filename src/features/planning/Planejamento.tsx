@@ -171,7 +171,7 @@ export function Planejamento({ aoRegistrarEsforco }: { aoRegistrarEsforco: (suge
                 <Aviso tipo="atencao" titulo="Regra de cadência ainda não confirmada.">
                   Sem a regra definida em Configurações, o aplicativo não calcula elegibilidade automática nem recomenda encerramento. Você
                   pode agendar a próxima ação manualmente, com data explícita. Mesmo com a regra confirmada, o aplicativo apenas recomenda
-                  acompanhamento — ele nunca encerra chamados no CS3.
+                  acompanhamento — ele nunca encerra chamados no SC3.
                 </Aviso>
               )}
               <p className="rodape-nota">

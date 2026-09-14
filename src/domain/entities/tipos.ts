@@ -82,8 +82,12 @@ export interface Ticket {
   /** Verdadeiro enquanto só existir referência pessoal, sem linha oficial. */
   provisorio: boolean;
   referencia: ReferenciaExterna;
-  /** Campos oficiais, atualizáveis apenas por CSV CS3 mais recente. */
+  /** Dados SC3 exibidos; edições manuais prevalecem sobre o CSV. */
   oficial: CamposOficiaisCs3 | null;
+  /** Snapshot da última extração, separado dos valores editados na Central. */
+  ultimoSc3Importado?: CamposOficiaisCs3 | null;
+  /** Só os campos alterados manualmente. Ausência mantém compatibilidade com bases antigas. */
+  ajustesSc3?: Partial<CamposOficiaisCs3>;
   /** Versão da fonte oficial já aplicada (bruto de `Last Update Time`). */
   versaoFonte: string | null;
   versaoFonteInstante: Instant | null;

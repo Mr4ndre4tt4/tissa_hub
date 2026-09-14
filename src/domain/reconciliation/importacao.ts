@@ -23,6 +23,7 @@ import type {
   TipoPendencia,
   Uuid,
 } from '../entities/tipos';
+import { aplicarAjustesSc3 } from '../entities/dadosSc3';
 import { chaveOficial, lerReferencia, normalizarParaComparacao, referenciasCitadasEmTexto } from '../entities/identidade';
 import { celulaEfetiva, normalizarAndamentoPessoal, sugerirCelulaPorTag3 } from '../entities/celulas';
 import { compararCarimbos, diferencaEmDias, lerCarimboCs3 } from '../time/datas';
@@ -296,7 +297,7 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
     if (novoCarimbo.ok && carimboConhecido?.ok) ordem = compararCarimbos(novoCarimbo.valor, carimboConhecido.valor);
     else if (!carimboConhecido) ordem = 1; // provisório ainda sem versão oficial
 
-    const conteudoIgual = JSON.stringify(alvo.oficial) === JSON.stringify(registro.oficial);
+    const conteudoIgual = JSON.stringify(alvo.ultimoSc3Importado ?? alvo.oficial) === JSON.stringify(registro.oficial);
 
     if (ordem === null) {
       const issue = criarIssue(
@@ -379,7 +380,7 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
         rotulo: registro.sourceTicketId,
         descricao: 'Mesma versão com conteúdo diferente.',
         linhaOrigem: registro.linha,
-        campos: camposOficiais(alvo, registro.oficial),
+        campos: camposOficiais(alvo, aplicarAjustesSc3(alvo, registro.oficial)),
         operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto, ticketType: registro.ticketType, sourceTicketId: registro.sourceTicketId },
         incluidoPorPadrao: false,
         issueIds: [issue.id],
@@ -394,9 +395,9 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
       rotulo: registro.sourceTicketId,
       descricao: provisorio
         ? 'A extração oficial completa uma referência provisória, sem duplicar o chamado.'
-        : 'Campos oficiais atualizados. Registros pessoais permanecem.',
+        : 'Dados SC3 atualizados. Edições manuais e acompanhamento pessoal permanecem.',
       linhaOrigem: registro.linha,
-      campos: camposOficiais(alvo, registro.oficial),
+      campos: camposOficiais(alvo, aplicarAjustesSc3(alvo, registro.oficial)),
       operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto, ticketType: registro.ticketType, sourceTicketId: registro.sourceTicketId },
       incluidoPorPadrao: true,
       issueIds: [],
@@ -1154,8 +1155,9 @@ export function aplicarPrevia(
       case 'atualizar_ticket': {
         const t = r.tickets.find((x) => x.id === (item.operacao as { ticketId: Uuid }).ticketId);
         if (t) {
-          // Somente campos oficiais; nada pessoal é tocado (secção 5.1).
-          t.oficial = item.operacao.oficial;
+          // Atualiza a fonte e reaplica os ajustes SC3 manuais; nada pessoal é tocado.
+          t.ultimoSc3Importado = item.operacao.oficial;
+          t.oficial = aplicarAjustesSc3(t, item.operacao.oficial!);
           t.sourceSystem = 'CS3';
           t.ticketType = item.operacao.ticketType;
           t.sourceTicketId = item.operacao.sourceTicketId;

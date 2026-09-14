@@ -25,13 +25,18 @@ Especificação de origem: `ESPECIFICACAO_FINAL_PARA_IA.md`, versão 4.0.
 
 - **Meu dia** — registra o trabalho da data e fecha a jornada de 480 minutos,
   mostrando faltante ou excedente sem nunca completar as horas artificialmente.
-- **Chamados** — incidentes e requisições com o status oficial do CS3 ao lado do
+- **Chamados** — incidentes e requisições com o status oficial do SC3 ao lado do
   seu acompanhamento pessoal, que o atualizador de dados oficiais nunca
   sobrescreve. Use **Novo chamado** para cadastrar sem arquivo e **Editar chamado**
   no detalhe para alterar título, andamento, prioridade, responsável, célula,
   prazo, estimativa e próxima ação. **Salvar** confirma o conjunto; **Cancelar**
   descarta o formulário. A referência pode ser gerada no cadastro e, depois de
   salvo, referência e tipo permanecem estáveis para preservar os vínculos.
+  Em **Dados SC3 → Editar dados SC3**, edite também título, status, responsável,
+  datas, prioridade, impacto, complexidade, grupo, referências, tags e demais
+  campos da extração. Os ajustes são locais à Central e prevalecem nos próximos
+  CSVs. **Restaurar valores do último CSV** preenche o formulário; salve para
+  confirmar e voltar a acompanhar os valores importados.
 - **Dashboard** — indicadores recalculados a partir dos apontamentos, cada um
   com a sua definição e as suas exclusões. Nada é apresentado como SLA oficial.
 - **Planejamento** — tarefas e follow-ups, que nunca geram horas sozinhos.
@@ -85,7 +90,7 @@ aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 ## Verificar
 
 ```bash
-npm test                    # 333 testes sintéticos e de interface
+npm test                    # 353 testes sintéticos e de interface
 npx tsc -b                  # tipagem
 npm run build               # build de produção
 

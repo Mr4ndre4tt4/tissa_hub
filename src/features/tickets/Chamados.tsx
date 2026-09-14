@@ -3,7 +3,7 @@
  *
  * A tabela é a visão obrigatória. Total acumulado e total do período aparecem
  * separados. Referências provisórias dizem que os dados oficiais ainda não
- * foram importados. Concluir aqui nunca altera o CS3.
+ * foram importados. Concluir aqui nunca altera o SC3.
  */
 
 import { FormularioChamado } from './FormularioChamado';
@@ -156,7 +156,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
                   <th scope="col">ID / referência</th>
                   <th scope="col">Tipo</th>
                   <th scope="col">Título</th>
-                  <th scope="col">Status CS3</th>
+                  <th scope="col">Status SC3</th>
                   <th scope="col">Andamento pessoal</th>
                   <th scope="col">Célula</th>
                   <th scope="col" className="numero">Horas atribuídas</th>
@@ -174,7 +174,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
                       </button>
                       {l.ticket.provisorio && (
                         <div>
-                          <Marca tom="atencao">Sem importação CS3</Marca>
+                          <Marca tom="atencao">Sem importação SC3</Marca>
                         </div>
                       )}
                     </td>
