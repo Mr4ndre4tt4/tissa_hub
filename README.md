@@ -27,7 +27,11 @@ Especificação de origem: `ESPECIFICACAO_FINAL_PARA_IA.md`, versão 4.0.
   mostrando faltante ou excedente sem nunca completar as horas artificialmente.
 - **Chamados** — incidentes e requisições com o status oficial do CS3 ao lado do
   seu acompanhamento pessoal, que o atualizador de dados oficiais nunca
-  sobrescreve.
+  sobrescreve. Use **Novo chamado** para cadastrar sem arquivo e **Editar chamado**
+  no detalhe para alterar título, andamento, prioridade, responsável, célula,
+  prazo, estimativa e próxima ação. **Salvar** confirma o conjunto; **Cancelar**
+  descarta o formulário. A referência pode ser gerada no cadastro e, depois de
+  salvo, referência e tipo permanecem estáveis para preservar os vínculos.
 - **Dashboard** — indicadores recalculados a partir dos apontamentos, cada um
   com a sua definição e as suas exclusões. Nada é apresentado como SLA oficial.
 - **Planejamento** — tarefas e follow-ups, que nunca geram horas sozinhos.
@@ -81,7 +85,7 @@ aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 ## Verificar
 
 ```bash
-npm test                    # 309 testes sintéticos e de interface
+npm test                    # 333 testes sintéticos e de interface
 npx tsc -b                  # tipagem
 npm run build               # build de produção
 

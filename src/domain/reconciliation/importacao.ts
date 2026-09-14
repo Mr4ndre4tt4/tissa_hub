@@ -51,7 +51,7 @@ export type ClasseItem =
 
 export type OperacaoProposta =
   | { tipo: 'criar_ticket'; ticket: Ticket }
-  | { tipo: 'atualizar_ticket'; ticketId: Uuid; oficial: Ticket['oficial']; versaoFonte: string }
+  | { tipo: 'atualizar_ticket'; ticketId: Uuid; oficial: Ticket['oficial']; versaoFonte: string; ticketType: Ticket['ticketType']; sourceTicketId: string }
   | { tipo: 'criar_apontamento'; dados: DadosApontamento }
   | { tipo: 'atualizar_apontamento'; timeEntryId: Uuid; dados: DadosApontamento }
   | { tipo: 'criar_estado_pessoal'; dados: DadosEstadoPessoal }
@@ -319,7 +319,7 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
         descricao: 'Versões não comparáveis: exige revisão.',
         linhaOrigem: registro.linha,
         campos: [],
-        operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto },
+        operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto, ticketType: registro.ticketType, sourceTicketId: registro.sourceTicketId },
         incluidoPorPadrao: false,
         issueIds: [issue.id],
       });
@@ -380,7 +380,7 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
         descricao: 'Mesma versão com conteúdo diferente.',
         linhaOrigem: registro.linha,
         campos: camposOficiais(alvo, registro.oficial),
-        operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto },
+        operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto, ticketType: registro.ticketType, sourceTicketId: registro.sourceTicketId },
         incluidoPorPadrao: false,
         issueIds: [issue.id],
       });
@@ -397,7 +397,7 @@ export function previaCsv(revisao: Revision, documento: SourceDocument, leitura:
         : 'Campos oficiais atualizados. Registros pessoais permanecem.',
       linhaOrigem: registro.linha,
       campos: camposOficiais(alvo, registro.oficial),
-      operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto },
+      operacao: { tipo: 'atualizar_ticket', ticketId: alvo.id, oficial: registro.oficial, versaoFonte: registro.oficial.lastUpdateTimeBruto, ticketType: registro.ticketType, sourceTicketId: registro.sourceTicketId },
       incluidoPorPadrao: true,
       issueIds: [],
     });
@@ -1156,6 +1156,9 @@ export function aplicarPrevia(
         if (t) {
           // Somente campos oficiais; nada pessoal é tocado (secção 5.1).
           t.oficial = item.operacao.oficial;
+          t.sourceSystem = 'CS3';
+          t.ticketType = item.operacao.ticketType;
+          t.sourceTicketId = item.operacao.sourceTicketId;
           t.versaoFonte = item.operacao.versaoFonte;
           t.versaoFonteInstante = instante;
           t.provisorio = false;

@@ -6,6 +6,7 @@
  * foram importados. Concluir aqui nunca altera o CS3.
  */
 
+import { FormularioChamado } from './FormularioChamado';
 import { useMemo, useState } from 'react';
 import { useApp } from '../../app/estado';
 import { Aviso, EstadoVazio, EtiquetaCelula, Marca, Minutos, Painel } from '../../design/componentes';
@@ -31,6 +32,7 @@ interface LinhaChamado {
 
 export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
   const { revisao } = useApp();
+  const [criando, setCriando] = useState(false);
   const [busca, setBusca] = useState('');
   const [filtroCelula, setFiltroCelula] = useState<'todas' | Celula>('todas');
   const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -64,6 +66,8 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
   const totalAcumulado = filtradas.reduce((s, l) => s + l.acumuladoMinutos, 0);
   const totalPeriodo = filtradas.reduce((s, l) => s + l.periodoMinutos, 0);
 
+  if (criando) return <FormularioChamado aoCancelar={() => setCriando(false)} aoSalvar={aoAbrir} />;
+
   return (
     <>
       <div className="cabecalho-pagina">
@@ -71,6 +75,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
           <h1>Chamados</h1>
           <p>Incidentes e requisições, com o status oficial e o seu acompanhamento lado a lado.</p>
         </div>
+        <button type="button" onClick={() => setCriando(true)}>Novo chamado</button>
       </div>
 
       <Painel>
@@ -133,7 +138,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
         {filtradas.length === 0 ? (
           linhas.length === 0 ? (
             <EstadoVazio titulo="Nenhum chamado na base">
-              Importe as extrações do CS3 ou a planilha em <strong>Importações</strong> para começar.
+              Use <strong>Novo chamado</strong> para cadastrar manualmente ou envie um arquivo em <strong>Importações</strong>.
             </EstadoVazio>
           ) : (
             <EstadoVazio titulo="Nenhum resultado para estes filtros">
@@ -169,7 +174,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
                       </button>
                       {l.ticket.provisorio && (
                         <div>
-                          <Marca tom="atencao">Dados oficiais ainda não importados</Marca>
+                          <Marca tom="atencao">Sem importação CS3</Marca>
                         </div>
                       )}
                     </td>
