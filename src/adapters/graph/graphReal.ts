@@ -73,9 +73,14 @@ function paraItem(r: RespostaItem): ItemDrive {
 export class GraphReal implements ClienteGraph {
   constructor(private readonly tokens: ProvedorDeToken) {}
 
+  private diagnosticoAtivo(): boolean {
+    return typeof location !== 'undefined' &&
+      (new URLSearchParams(location.search).get('diagnostico') === '1' || location.hash === '#diagnostico');
+  }
+
   /** Diagnóstico opt-in, sem IDs, tokens, URLs de download ou conteúdo. */
   private diagnosticar(etapa: string, item: RespostaItem, esperado?: string): void {
-    if (typeof location === 'undefined' || new URLSearchParams(location.search).get('diagnostico') !== '1') return;
+    if (!this.diagnosticoAtivo()) return;
     console.info('[OneDrive]', JSON.stringify({
       etapa,
       descricaoPresente: Object.hasOwn(item, 'description'),
@@ -237,6 +242,14 @@ export class GraphReal implements ClienteGraph {
     );
     const corpo = (await r.json()) as RespostaItem;
     this.diagnosticar('ler-metadados', corpo);
+    if (this.diagnosticoAtivo() && corpo.folder !== undefined) {
+      // Comparação somente de leitura das projeções documentadas. O modo
+      // diagnóstico não muda qual resposta o protocolo utiliza.
+      for (const [etapa, sufixo] of [['leitura-padrao', ''], ['leitura-descricao', '?$select=id,eTag,description']] as const) {
+        const leitura = await this.requisitar(`/me/drive/items/${encodeURIComponent(itemId)}${sufixo}`);
+        this.diagnosticar(etapa, await leitura.json() as RespostaItem);
+      }
+    }
     return paraItem(corpo);
   }
 
