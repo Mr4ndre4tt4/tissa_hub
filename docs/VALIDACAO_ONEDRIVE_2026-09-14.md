@@ -25,3 +25,9 @@ A correção lê primeiro o JSON original. Se a sintaxe falhar, decodifica uma �
 Regressão reproduzida antes da correção com uma descrição sintética de 376 caracteres no mesmo formato observado. Testes também cobrem criação, releitura e nova gravação com o serviço codificando a pontuação.
 
 A publicação da correção e a validação funcional completa na conta real ainda estão pendentes nesta etapa.
+
+## Primeiras confirmações funcionais após a correção
+
+A versão publicada de 12a8727 abriu a revisão anteriormente presa em recuperação, sem recriar a base. Um CSV sintético de incidente foi lido como um registro novo, confirmado e devolveu "Salvo no OneDrive" e "Carga confirmada: 1 registro(s) aplicado(s)" com zero pendências.
+
+Recarregar a rota interna de importações revelou um segundo defeito: como o cache de autenticação é somente em memória, a sessão acaba, mas a rota mostrava uma base vazia com "Sem conexão" e aviso de demonstração. A guarda de navegação passa a exigir login também nas rotas internas sem sessão. Demonstração permanece uma escolha explícita. O novo caso falhou antes da alteração.
