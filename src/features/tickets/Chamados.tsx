@@ -6,6 +6,10 @@
  * foram importados. Concluir aqui nunca altera o SC3.
  */
 
+import { FormularioSc3 } from './FormularioSc3';
+import { useListaChamados, textoParaBusca } from './estadoLista';
+import { normalizarStatusSc3, STATUS_SC3, statusSc3Encerrado } from '../../domain/entities/statusSc3';
+import { ehDataValida } from '../../domain/time/datas';
 import { FormularioChamado } from './FormularioChamado';
 import { useMemo, useState } from 'react';
 import { useApp } from '../../app/estado';
@@ -13,7 +17,6 @@ import { Aviso, EstadoVazio, EtiquetaCelula, Marca, Minutos, Painel } from '../.
 import { ROTULO_CELULA, type Celula, type Revision, type Ticket, type Uuid } from '../../domain/entities/tipos';
 import { exibirStatusCs3 } from '../../domain/entities/celulas';
 import { esforcoDoTicket } from '../../domain/time/alocacao';
-import { normalizarParaComparacao } from '../../domain/entities/identidade';
 import { noPeriodo, type Periodo } from '../../domain/metrics/indicadores';
 import { rotularMinutos } from '../../domain/time/duracao';
 
@@ -33,17 +36,17 @@ interface LinhaChamado {
 export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
   const { revisao } = useApp();
   const [criando, setCriando] = useState(false);
-  const [busca, setBusca] = useState('');
-  const [filtroCelula, setFiltroCelula] = useState<'todas' | Celula>('todas');
-  const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [somentePendencias, setSomentePendencias] = useState(false);
-  const [densidade, setDensidade] = useState<'normal' | 'compacta'>('normal');
-  const [periodo, setPeriodo] = useState<Periodo>({ inicio: '2026-09-01', fim: '2026-09-30' });
+  const [sc3EmEdicao, setSc3EmEdicao] = useState<string | null>(null);
+  const { filtros, setFiltros, limpar } = useListaChamados();
+  const { busca, celula: filtroCelula, status: filtroStatus, situacao, somentePendencias, densidade, periodo, ordem } = filtros;
+  const alterar = <K extends keyof typeof filtros>(chave: K, valor: typeof filtros[K]) => setFiltros(f => ({ ...f, [chave]: valor }));
+  const periodoValido = ehDataValida(periodo.inicio) && ehDataValida(periodo.fim) && periodo.inicio <= periodo.fim;
 
+  const estadosPorTicket = useMemo(() => new Map(revisao.personalStates.map(p => [p.ticketId, p])), [revisao.personalStates]);
   const linhas = useMemo(() => montarLinhas(revisao, periodo), [revisao, periodo]);
 
   const filtradas = linhas.filter((l) => {
-    const alvo = normalizarParaComparacao(busca);
+    const alvo = textoParaBusca(busca);
     if (alvo.length > 0) {
       // Busca por ID, título, referência externa e termos da descrição.
       const campos = [
@@ -53,19 +56,32 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
         l.ticket.oficial?.title ?? '',
         l.ticket.oficial?.external ?? '',
         l.proximaAcao ?? '',
-      ].map(normalizarParaComparacao);
+        l.ticket.oficial?.assignedTo ?? '',
+        estadosPorTicket.get(l.ticket.id)?.responsavelPessoal ?? '',
+      ].map(textoParaBusca);
       if (!campos.some((c) => c.includes(alvo))) return false;
     }
     if (filtroCelula !== 'todas' && l.celula !== filtroCelula) return false;
-    if (filtroStatus !== 'todos' && l.statusOficial.bruto !== filtroStatus) return false;
+    if (filtroStatus !== 'todos' && (normalizarStatusSc3(l.statusOficial.bruto) || 'sem_status') !== filtroStatus) return false;
+    if (situacao === 'abertos' && statusSc3Encerrado(l.statusOficial.bruto)) return false;
+    if (situacao === 'encerrados' && !statusSc3Encerrado(l.statusOficial.bruto)) return false;
     if (somentePendencias && !temPendencia(revisao, l.ticket.id)) return false;
     return true;
   });
 
-  const statusDisponiveis = [...new Set(linhas.map((l) => l.statusOficial.bruto))].filter((s) => s.length > 0);
+  const statusDisponiveis = [...new Set([...STATUS_SC3, ...linhas.map(l => normalizarStatusSc3(l.statusOficial.bruto)).filter(Boolean)])];
+  const pessoal = (id: string) => estadosPorTicket.get(id);
+  const instante = (data: string | undefined) => Number.isFinite(Date.parse(data ?? '')) ? Date.parse(data!) : 0;
+  filtradas.sort((a, b) => {
+    if (ordem === 'referencia') return a.ticket.referencia.bruto.localeCompare(b.ticket.referencia.bruto, 'pt-BR', { numeric: true });
+    if (ordem === 'prazo') return (pessoal(a.ticket.id)?.prazo || '9999').localeCompare(pessoal(b.ticket.id)?.prazo || '9999');
+    return Math.max(instante(b.ticket.atualizadoEm), instante(pessoal(b.ticket.id)?.atualizadoEm)) - Math.max(instante(a.ticket.atualizadoEm), instante(pessoal(a.ticket.id)?.atualizadoEm));
+  });
   const totalAcumulado = filtradas.reduce((s, l) => s + l.acumuladoMinutos, 0);
   const totalPeriodo = filtradas.reduce((s, l) => s + l.periodoMinutos, 0);
 
+  const editado = revisao.tickets.find(t => t.id === sc3EmEdicao);
+  if (editado) return <FormularioSc3 key={editado.id} ticket={editado} aoFechar={() => setSc3EmEdicao(null)} />;
   if (criando) return <FormularioChamado aoCancelar={() => setCriando(false)} aoSalvar={aoAbrir} />;
 
   return (
@@ -80,19 +96,40 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
 
       <Painel>
         <div className="filtros">
-          <div className="campo" style={{ minWidth: 280 }}>
+          <div className="campo busca-chamados">
             <label htmlFor="busca-chamados">Buscar</label>
             <input
               id="busca-chamados"
               type="search"
-              placeholder="ID, título, referência externa ou termo"
+              placeholder="ID, título, responsável ou próxima ação"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(e) => alterar('busca', e.target.value)}
             />
           </div>
           <div className="campo">
+            <label htmlFor="filtro-status">Status SC3</label>
+            <select id="filtro-status" value={filtroStatus} onChange={(e) => alterar('status', e.target.value)}>
+              <option value="todos">Todos</option>
+              <option value="sem_status">Sem status informado</option>
+              {statusDisponiveis.map((s) => (
+                <option key={s} value={s}>
+                  {exibirStatusCs3(s, revisao.workspace.mapaStatusCs3).amigavel}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="campo">
+            <label htmlFor="filtro-situacao">Situação</label>
+            <select id="filtro-situacao" value={situacao} onChange={e => alterar('situacao', e.target.value as typeof situacao)}>
+              <option value="todos">Todos os chamados</option><option value="abertos">Em aberto</option><option value="encerrados">Resolved / Closed</option>
+            </select>
+          </div>
+          <button type="button" className="secundario" onClick={limpar}>Limpar filtros</button>
+        </div>
+        <details className="filtros-avancados"><summary>Mais filtros e ordenação</summary><div className="filtros">
+          <div className="campo">
             <label htmlFor="filtro-celula">Célula</label>
-            <select id="filtro-celula" value={filtroCelula} onChange={(e) => setFiltroCelula(e.target.value as 'todas' | Celula)}>
+            <select id="filtro-celula" value={filtroCelula} onChange={(e) => alterar('celula', e.target.value as 'todas' | Celula)}>
               <option value="todas">Todas</option>
               {(Object.keys(ROTULO_CELULA) as Celula[]).map((c) => (
                 <option key={c} value={c}>
@@ -102,38 +139,33 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
             </select>
           </div>
           <div className="campo">
-            <label htmlFor="filtro-status">Status oficial</label>
-            <select id="filtro-status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
-              <option value="todos">Todos</option>
-              {statusDisponiveis.map((s) => (
-                <option key={s} value={s}>
-                  {exibirStatusCs3(s, revisao.workspace.mapaStatusCs3).amigavel}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="campo">
             <label htmlFor="periodo-inicio">Período (esforço)</label>
-            <input id="periodo-inicio" type="date" value={periodo.inicio} onChange={(e) => setPeriodo({ ...periodo, inicio: e.target.value })} />
+            <input id="periodo-inicio" type="date" value={periodo.inicio} onChange={(e) => alterar('periodo', { ...periodo, inicio: e.target.value })} />
           </div>
           <div className="campo">
             <label htmlFor="periodo-fim">até</label>
-            <input id="periodo-fim" type="date" value={periodo.fim} onChange={(e) => setPeriodo({ ...periodo, fim: e.target.value })} />
+            <input id="periodo-fim" type="date" value={periodo.fim} onChange={(e) => alterar('periodo', { ...periodo, fim: e.target.value })} />
           </div>
           <label style={{ display: 'flex', gap: 'var(--e2)', alignItems: 'center', marginBottom: 0 }}>
-            <input type="checkbox" style={{ width: 'auto', minHeight: 'auto' }} checked={somentePendencias} onChange={(e) => setSomentePendencias(e.target.checked)} />
+            <input type="checkbox" style={{ width: 'auto', minHeight: 'auto' }} checked={somentePendencias} onChange={(e) => alterar('somentePendencias', e.target.checked)} />
             Somente com pendência
           </label>
-          <button type="button" className="secundario" onClick={() => setDensidade(densidade === 'normal' ? 'compacta' : 'normal')}>
+          <button type="button" className="secundario" onClick={() => alterar('densidade', densidade === 'normal' ? 'compacta' : 'normal')}>
             Densidade: {densidade === 'normal' ? 'normal' : 'compacta'}
           </button>
-        </div>
+          <div className="campo"><label htmlFor="ordem-chamados">Ordenar por</label>
+            <select id="ordem-chamados" value={ordem} onChange={e => alterar('ordem', e.target.value as typeof ordem)}>
+              <option value="recentes">Atualizados recentemente</option><option value="referencia">Referência</option><option value="prazo">Prazo pessoal</option>
+            </select>
+          </div>
+        </div><p className="rodape-nota">O período filtra o esforço. Os chamados e as horas históricas continuam na base.</p></details>
 
-        {/* O filtro de período afeta o esforço, não o acumulado histórico. */}
-        <Aviso tipo="informacao" titulo="Totais separados:">
-          Acumulado de todo o histórico: <strong>{rotularMinutos(totalAcumulado)}</strong>. No período selecionado:{' '}
-          <strong>{rotularMinutos(totalPeriodo)}</strong>. Filtrar o período não elimina horas históricas dos relatórios de esforço.
-        </Aviso>
+        {!periodoValido && <Aviso tipo="atencao">Informe um período válido, com a data inicial anterior ou igual à final.</Aviso>}
+        <div className="resumo-lista" role="status">
+          <strong>{filtradas.length} de {linhas.length} chamados</strong>
+          <span>Esforço acumulado: {rotularMinutos(totalAcumulado)}</span>
+          <span>No período: {periodoValido ? rotularMinutos(totalPeriodo) : 'período inválido'}</span>
+        </div>
 
         {filtradas.length === 0 ? (
           linhas.length === 0 ? (
@@ -172,6 +204,7 @@ export function Chamados({ aoAbrir }: { aoAbrir: (id: Uuid) => void }) {
                       <button type="button" className="discreto" onClick={() => aoAbrir(l.ticket.id)}>
                         {l.ticket.referencia.bruto}
                       </button>
+                      <div><button type="button" className="discreto atalho-sc3" aria-label={`Editar SC3 de ${l.ticket.referencia.bruto}`} onClick={() => setSc3EmEdicao(l.ticket.id)}>Editar SC3</button></div>
                       {l.ticket.provisorio && (
                         <div>
                           <Marca tom="atencao">Sem importação SC3</Marca>

@@ -724,3 +724,11 @@ code,
 }
 .outros-campos-sc3 { margin: var(--e4) 0 var(--e5); }
 .outros-campos-sc3 summary { cursor: pointer; padding: var(--e3) 0; font-weight: var(--peso-enfase); }
+
+.busca-chamados { flex: 1; min-width: min(100%, 280px); }
+.filtros-avancados { border-top: 1px solid var(--linha); margin-top: var(--e3); }
+.filtros-avancados summary { cursor: pointer; padding: var(--e3) 0; font-weight: var(--peso-enfase); }
+.filtros-avancados .filtros { padding-top: var(--e3); }
+.resumo-lista { display: flex; flex-wrap: wrap; gap: var(--e3) var(--e5); padding: var(--e4) 0; color: var(--text-muted); font-size: 14px; }
+.atalho-sc3 { font-size: 13px; white-space: nowrap; }
+.acoes-formulario { position: sticky; bottom: 0; z-index: 2; padding: var(--e3) 0; border-top: 1px solid var(--linha); background: var(--surface); }

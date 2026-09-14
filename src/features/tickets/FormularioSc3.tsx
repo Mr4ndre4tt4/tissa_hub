@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useApp } from '../../app/estado';
 import { Aviso, Campo, Painel } from '../../design/componentes';
 import { CAMPOS_SC3, camposSc3Vazios, salvarDadosSc3, type CampoTextoSc3 } from '../../domain/entities/dadosSc3';
+import { STATUS_SC3 } from '../../domain/entities/statusSc3';
 import type { Ticket } from '../../domain/entities/tipos';
 
 export function FormularioSc3({ ticket, aoFechar }: { ticket: Ticket; aoFechar: () => void }) {
@@ -33,7 +34,12 @@ export function FormularioSc3({ ticket, aoFechar }: { ticket: Ticket; aoFechar: 
   function entrada([chave, rotulo]: typeof CAMPOS_SC3[number]) {
     const data = chave === 'startTimeBruto' || chave === 'lastUpdateTimeBruto';
     return <Campo key={chave} rotulo={rotulo} obrigatorio={chave === 'title'} ajuda={data ? 'DD/MM/AAAA ou DD/MM/AAAA HH:mm:ss. Sem conversão de fuso.' : undefined}>
-      {p => <input {...p} value={campos[chave] ?? ''} required={chave === 'title'} onChange={e => mudar(chave, e.target.value)} />}
+      {p => chave === 'statusBruto' ? <select {...p} value={campos.statusBruto} onChange={e => mudar(chave, e.target.value)}>
+        <option value="">Sem status informado</option>
+        {campos.statusBruto && !STATUS_SC3.some(s => s === campos.statusBruto) && <option value={campos.statusBruto}>{campos.statusBruto} (valor atual)</option>}
+        {STATUS_SC3.map(s => <option key={s} value={s}>{s}</option>)}
+      </select> : <input {...p} value={campos[chave] ?? ''} required={chave === 'title'} onChange={e => mudar(chave, e.target.value)} />}
+
     </Campo>;
   }
   return <>
@@ -56,7 +62,7 @@ export function FormularioSc3({ ticket, aoFechar }: { ticket: Ticket; aoFechar: 
               </Campo>)}
             </div>
           </details>
-          <div className="acoes-linha">
+          <div className="acoes-linha acoes-formulario">
             <button type="submit">{enviando ? 'Salvando…' : 'Salvar dados SC3'}</button>
             <button type="button" className="secundario" onClick={aoFechar}>Cancelar</button>
             {importado && Object.keys(ticket.ajustesSc3 ?? {}).length > 0 && <button type="button" className="discreto" onClick={() => { setCampos(structuredClone(importado)); setRestaurar(true); }}>Restaurar valores do último CSV</button>}

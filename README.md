@@ -6,8 +6,9 @@ sem banco de dados externo.
 
 > **Estado atual.** O domínio, os leitores de fontes, a conciliação, as métricas
 > e as sete telas estão implementados e testados. A interface tem publicação no
-> GitHub Pages, mas a validação completa de gravação e concorrência na conta
-> Microsoft real continua pendente. A revisão de importação e recuperação está
+> GitHub Pages. Importação, edição e releitura após novo login foram verificadas
+> em conta Microsoft de teste; a validação de concorrência real continua pendente.
+> A revisão de importação e recuperação está
 > em [`docs/REVISAO_IMPORTACAO_2026-09-14.md`](docs/REVISAO_IMPORTACAO_2026-09-14.md). O relatório original,
 > com o que foi testado e o que não foi, está em
 > [`docs/RELATORIO_DE_ENTREGA.md`](docs/RELATORIO_DE_ENTREGA.md).
@@ -37,8 +38,18 @@ Especificação de origem: `ESPECIFICACAO_FINAL_PARA_IA.md`, versão 4.0.
   campos da extração. Os ajustes são locais à Central e prevalecem nos próximos
   CSVs. **Restaurar valores do último CSV** preenche o formulário; salve para
   confirmar e voltar a acompanhar os valores importados.
+  O **Status SC3** oferece Waiting External, Waiting User, Went On Fulfillment,
+  Update, Working, Resolved e Closed. Valores antigos importados são preservados
+  até a seleção de outro status. O atalho **Editar SC3** na lista abre o formulário
+  diretamente, com salvar e cancelar acessíveis durante a rolagem.
+  A busca aceita texto sem acentos e inclui responsáveis e próxima ação. Os
+  filtros de status e situação ficam à vista; célula, período, pendências,
+  densidade e ordenação ficam em **Mais filtros e ordenação**. Busca e filtros
+  permanecem ao abrir um chamado e voltar durante a sessão; **Limpar filtros**
+  restaura a lista e o mês atual. Resolved e Closed compõem o filtro de encerrados.
 - **Dashboard** — indicadores recalculados a partir dos apontamentos, cada um
-  com a sua definição e as suas exclusões. Nada é apresentado como SLA oficial.
+  com a sua definição e as suas exclusões. O período inicial acompanha o mês
+  atual, assim como na lista. Nada é apresentado como SLA oficial.
 - **Planejamento** — tarefas e follow-ups, que nunca geram horas sozinhos.
 - **Importações** — assistente de carga com prévia, comparação em três estados e
   uma caixa de pendências que não some depois do upload.
@@ -90,7 +101,7 @@ aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 ## Verificar
 
 ```bash
-npm test                    # 353 testes sintéticos e de interface
+npm test                    # 381 testes sintéticos e de interface
 npx tsc -b                  # tipagem
 npm run build               # build de produção
 

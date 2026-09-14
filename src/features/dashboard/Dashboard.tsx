@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useApp } from '../../app/estado';
+import { useApp, hojeLocal } from '../../app/estado';
 import { Aviso, BarrasHorizontais, EstadoVazio, EtiquetaCelula, GraficoDiario, Indicador, Marca, Minutos, Painel } from '../../design/componentes';
 import { ROTULO_CELULA, type Celula } from '../../domain/entities/tipos';
 import {
@@ -23,13 +23,14 @@ import {
   tempoAteResolucao,
   type Periodo,
 } from '../../domain/metrics/indicadores';
+import { periodoDoMes } from '../../domain/time/datas';
 import { diasVencidosIncompletos, saldoDoDia } from '../../domain/time/jornada';
 import { rotularMinutos } from '../../domain/time/duracao';
 import { gerarCsv, gerarXlsx } from '../../domain/sources/xlsx-escrita';
 
 export function Dashboard() {
   const { revisao, dataSelecionada, definirDataSelecionada, modo } = useApp();
-  const [periodo, setPeriodo] = useState<Periodo>({ inicio: '2026-09-01', fim: '2026-09-30' });
+  const [periodo, setPeriodo] = useState<Periodo>(() => periodoDoMes(modo === 'demonstrativo' ? dataSelecionada : hojeLocal()));
 
   const painel = useMemo(() => painelReconciliado(revisao, periodo), [revisao, periodo]);
   const serie = useMemo(() => serieDiaria(revisao, periodo), [revisao, periodo]);

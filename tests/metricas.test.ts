@@ -199,7 +199,7 @@ describe('AC-051 / secção 13 — status e ações', () => {
     const c = chamadosPorStatus(r);
     expect(c.provisorios).toBe(1);
     expect(c.oficial.find((x) => x.bruto === 'Working')!.rotulo).toBe('Em atendimento');
-    expect(c.oficial.find((x) => x.bruto === 'Updated')!.rotulo).toBe('Atualizado / revisar');
+    expect(c.oficial.find((x) => x.bruto === 'Update')!.rotulo).toBe('Atualizado / revisar');
     expect(c.oficial.find((x) => x.bruto === 'Pending Vendor')!.naoMapeado).toBe(true);
     expect(c.pessoal[0]!.rotulo).toBe('Em andamento ABAP');
   });

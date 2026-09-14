@@ -12,6 +12,7 @@
  */
 
 import type { Celula } from './tipos';
+import { normalizarStatusSc3 } from './statusSc3';
 import { normalizarParaComparacao } from './identidade';
 
 export type ForcaSugestao = 'definida' | 'a_confirmar' | 'revisao';
@@ -74,6 +75,12 @@ export function divergenciaDeCelula(manual: Celula | null, sugestao: SugestaoCel
  */
 export const MAPA_STATUS_CS3: Record<string, string> = {
   WORKING: 'Em atendimento',
+  'WAITING EXTERNAL': 'Aguardando terceiro',
+  'WAITING USER': 'Aguardando usuário',
+  'WENT ON FULFILLMENT': 'Went On Fulfillment',
+  UPDATE: 'Atualizado / revisar',
+  RESOLVED: 'Resolvido',
+  CLOSED: 'Fechado',
   'WAIT ON USER': 'Aguardando usuário',
   'WAIT ON EXTERNAL': 'Aguardando terceiro',
   UPDATED: 'Atualizado / revisar',
@@ -90,7 +97,8 @@ export function exibirStatusCs3(bruto: string | null | undefined, mapaExtra: Rec
   const texto = (bruto ?? '').replace(/ /g, ' ').trim();
   if (texto.length === 0) return { bruto: '', amigavel: 'Sem status', naoMapeado: true };
   const chave = normalizarParaComparacao(texto);
-  const amigavel = mapaExtra[chave] ?? MAPA_STATUS_CS3[chave];
+  const preferencia = mapaExtra[chave] ?? Object.entries(mapaExtra).find(([s]) => normalizarStatusSc3(s) === normalizarStatusSc3(texto))?.[1];
+  const amigavel = preferencia ?? MAPA_STATUS_CS3[chave];
   return amigavel
     ? { bruto: texto, amigavel, naoMapeado: false }
     : { bruto: texto, amigavel: `${texto} (não mapeado)`, naoMapeado: true };

@@ -181,3 +181,11 @@ export function enumerarPeriodo(inicio: WorkDate, fim: WorkDate): WorkDate[] {
   for (let i = 0; i <= total; i += 1) saida.push(somarDias(inicio, i));
   return saida;
 }
+
+/** Mês civil completo, sem datas fixas de demonstração e sem deslocamento de fuso. */
+export function periodoDoMes(data: WorkDate): { inicio: WorkDate; fim: WorkDate } {
+  if (!ehDataValida(data)) throw new Error('Data inválida para definir o mês.');
+  const ano = Number(data.slice(0, 4));
+  const mes = Number(data.slice(5, 7));
+  return { inicio: formatar(ano, mes, 1), fim: formatar(ano, mes, diasNoMes(ano, mes)) };
+}
