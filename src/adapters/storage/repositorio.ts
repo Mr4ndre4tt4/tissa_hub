@@ -521,8 +521,11 @@ export class RepositorioOneDrive {
           this.reciboDe(ativa.revisao, recibo.operationId)) {
         return { estado: 'confirmado', revisao: ativa.revisao, recibo };
       }
-    } catch {
-      // Um PATCH aceito, ou sem resposta, ainda exige confirmação pela leitura.
+    } catch (e) {
+      // Preservar a etapa que falhou: a conta real pode aceitar o PATCH e
+      // falhar somente ao reler a cabeça ou os bytes da revisão.
+      const causa = e instanceof Error ? e.message : 'Falha de leitura sem detalhe.';
+      return { estado: 'incerto', detalhe: `A recuperação não pôde ser confirmada pela releitura da base: ${causa} As revisões continuam preservadas.` };
     }
     return { estado: 'incerto', detalhe: 'A recuperação não pôde ser confirmada pela releitura da base. As revisões continuam preservadas. Use Tentar de novo antes de repetir.' };
   }

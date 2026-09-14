@@ -73,6 +73,19 @@ function paraItem(r: RespostaItem): ItemDrive {
 export class GraphReal implements ClienteGraph {
   constructor(private readonly tokens: ProvedorDeToken) {}
 
+  /** Diagnóstico opt-in, sem IDs, tokens, URLs de download ou conteúdo. */
+  private diagnosticar(etapa: string, item: RespostaItem, esperado?: string): void {
+    if (typeof location === 'undefined' || new URLSearchParams(location.search).get('diagnostico') !== '1') return;
+    console.info('[OneDrive]', JSON.stringify({
+      etapa,
+      descricaoPresente: Object.hasOwn(item, 'description'),
+      descricaoCaracteres: item.description?.length ?? 0,
+      eTagPresente: Boolean(item.eTag),
+      pasta: item.folder !== undefined,
+      correspondeAoEnviado: esperado === undefined ? undefined : item.description === esperado,
+    }));
+  }
+
   private async requisitar(
     caminho: string,
     init: RequestInit & { corpoBinario?: Uint8Array } = {},
@@ -222,7 +235,9 @@ export class GraphReal implements ClienteGraph {
     const r = await this.requisitar(
       `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,file,folder`,
     );
-    return paraItem((await r.json()) as RespostaItem);
+    const corpo = (await r.json()) as RespostaItem;
+    this.diagnosticar('ler-metadados', corpo);
+    return paraItem(corpo);
   }
 
   /**
@@ -305,6 +320,8 @@ export class GraphReal implements ClienteGraph {
       // Somente a nova descrição é enviada.
       body: JSON.stringify({ description: descricao }),
     });
-    return paraItem((await r.json()) as RespostaItem);
+    const corpo = (await r.json()) as RespostaItem;
+    this.diagnosticar('publicar-ponteiro', corpo, descricao);
+    return paraItem(corpo);
   }
 }
