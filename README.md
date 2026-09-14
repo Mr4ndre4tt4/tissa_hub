@@ -81,7 +81,7 @@ aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 ## Verificar
 
 ```bash
-npm test                    # 300 testes sintéticos e de interface
+npm test                    # 309 testes sintéticos e de interface
 npx tsc -b                  # tipagem
 npm run build               # build de produção
 

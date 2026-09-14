@@ -58,7 +58,10 @@ function lerRota(): Rota {
  * base já aberta) só foi pego manualmente, contra a conta real.
  */
 export function deveMostrarEntrada(modo: ModoDeOperacao, rotaTela: Rota['tela']): boolean {
-  return rotaTela === 'entrada' && modo !== 'conectado' && modo !== 'demonstrativo';
+  // O cache de autenticação vive só em memória. Recarregar uma rota interna
+  // exige novo login; nunca exibir uma revisão vazia como se fosse a base.
+  return modo === 'nao_configurado' ||
+    (rotaTela === 'entrada' && modo !== 'conectado' && modo !== 'demonstrativo');
 }
 
 export function App() {

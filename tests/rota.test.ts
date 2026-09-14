@@ -26,9 +26,14 @@ describe('deveMostrarEntrada', () => {
     expect(deveMostrarEntrada('demonstrativo', 'entrada')).toBe(false);
   });
 
-  it('nunca mostra a tela de login fora da rota "entrada", seja qual for o modo', () => {
+  it('pede login ao reabrir uma rota interna sem sessão, em vez de mostrar uma base vazia', () => {
+    for (const tela of ['dia', 'chamados', 'importacoes', 'configuracoes'] as const) {
+      expect(deveMostrarEntrada('nao_configurado', tela)).toBe(true);
+    }
+  });
+
+  it('mantém as rotas internas nas sessões e nos fluxos de conexão já iniciados', () => {
     const todosOsModos: ModoDeOperacao[] = [
-      'nao_configurado',
       'demonstrativo',
       'conectando',
       'sem_base',
