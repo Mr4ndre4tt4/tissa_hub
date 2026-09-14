@@ -221,24 +221,10 @@ export class GraphReal implements ClienteGraph {
   }
 
   async obterItem(itemId: string): Promise<ItemDrive> {
-    // `description` não vem por padrão numa leitura simples de driveItem — é
-    // preciso pedir explicitamente com `$select`, comportamento documentado
-    // pela própria Microsoft. Sem isto, toda leitura da cabeça devolvia
-    // descrição vazia mesmo logo depois de um PATCH bem-sucedido: o ponteiro
-    // parecia sumir a cada mutação seguinte, mesmo com a revisão gravada e
-    // a publicação confirmada — a causa real por trás de "Recuperação
-    // necessária" reaparecendo depois de qualquer apontamento ou importação
-    // na conta real (DECISOES.md §27).
-    //
-    // ESTE `$select` propositalmente NÃO pede `@microsoft.graph.downloadUrl`.
-    // Uma tentativa anterior incluiu a anotação aqui (junto com `file`), na
-    // suposição de que faltava a faceta certa — mas o mesmo erro ("não
-    // expôs uma URL de download") reapareceu contra a conta real, inclusive
-    // numa revisão criada minutos antes pelo próprio aplicativo. Ou seja: o
-    // problema não é qual faceta falta, é misturar `@microsoft.graph.
-    // downloadUrl` com qualquer `$select` explícito nesta conta — a leitura
-    // de conteúdo (`baixarConteudo()`) usa `obterUrlDeDownload()`, uma
-    // chamada própria e sem `$select`, exatamente por isto.
+    // A projeção solicita explicitamente os campos do protocolo. A prova
+    // real de 14/09/2026 confirmou que description estava presente inclusive
+    // na leitura padrão: o problema era sua pontuação codificada como HTML,
+    // normalizada por lerPonteiro. Download continua separado dos metadados.
     const r = await this.requisitar(
       `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,eTag,cTag,description,size,file,folder`,
     );

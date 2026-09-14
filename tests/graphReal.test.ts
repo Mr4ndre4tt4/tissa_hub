@@ -19,12 +19,9 @@
  *    precisaria ser liberado numa política de segurança restritiva. A leitura
  *    da própria URL de download é feita sem `$select` — ver o teste dedicado
  *    logo abaixo para o porquê;
- *  - `obterItem()` pede `description` explicitamente com `$select` — a
- *    Microsoft não devolve essa propriedade numa leitura simples de
- *    driveItem (comportamento documentado). Sem isso, `lerCabeca()` lia
- *    sempre uma descrição vazia, mesmo logo depois de um `PATCH`
- *    bem-sucedido — o ponteiro "sumia" a cada mutação seguinte na conta
- *    real, mesmo com a revisão gravada (DECISOES.md §27).
+ *  - `obterItem()` solicita os campos do protocolo explicitamente. A
+ *    codificação HTML da descrição, confirmada na conta real, é tratada
+ *    pelo leitor de ponteiro e coberta em ponteiro.test.ts.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GraphReal, NOME_PASTA_DO_APP, type ProvedorDeToken } from '../src/adapters/graph/graphReal';

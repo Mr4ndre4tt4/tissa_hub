@@ -37,6 +37,19 @@ function acrescentar(minutos: number, data = '2026-09-01') {
 }
 
 describe('secção 16.3 — inicialização', () => {
+  it('cria, relê e salva quando o serviço codifica as aspas da descrição', async () => {
+    const graph = new GraphSimulado();
+    const publicar = graph.atualizarDescricao.bind(graph);
+    vi.spyOn(graph, 'atualizarDescricao').mockImplementation((id, descricao, etag) =>
+      publicar(id, descricao.replaceAll('{', '&#123;').replaceAll('}', '&#125;')
+        .replaceAll(':', '&#58;').replaceAll('"', '&quot;'), etag));
+    const { repo } = await baseInicializada(graph);
+    expect((await repo.carregarRevisaoAtiva()).revisao?.receipts[0]?.operationId).toBe('op-init');
+    const salvo = await repo.salvar('op-codificado', 'teste', acrescentar(45));
+    expect(salvo.estado).toBe('confirmado');
+    expect((await repo.carregarRevisaoAtiva()).revisao?.timeEntries[0]?.duracaoMinutos).toBe(45);
+  });
+
   it('não confirma a criação se o servidor não publicar o ponteiro', async () => {
     const graph = new GraphSimulado();
     const repo = new RepositorioOneDrive(graph, 'conta-a');
