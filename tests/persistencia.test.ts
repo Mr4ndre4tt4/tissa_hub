@@ -135,6 +135,7 @@ describe('recuperarApontandoPara — recuperação manual (secção 16.3)', () =
     vi.spyOn(graph, 'atualizarDescricao').mockImplementation(async (id) => graph.obterItem(id));
     const r = await repo.recuperarApontandoPara(ponteiro!.itemId);
     expect(r.estado).toBe('incerto');
+    expect('detalhe' in r && r.detalhe).toContain('O ponteiro está vazio');
   });
 
   it('recusa revisão sem recibo antes de alterar o ponteiro', async () => {
