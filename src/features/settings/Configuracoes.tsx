@@ -177,7 +177,7 @@ export function Configuracoes({ aoSair }: { aoSair: () => void }) {
             {(p) => <input {...p} defaultValue={ws.schedule.fusoTrabalho} onBlur={(e) => void atualizarWorkspace({ schedule: { ...ws.schedule, fusoTrabalho: e.target.value } })} />}
           </Campo>
           <Campo
-            rotulo="Fuso das extrações CS3"
+            rotulo="Fuso das extrações SC3"
             ajuda="Enquanto não for informado, os horários das fontes são preservados como locais e perfis temporais diferentes não são comparados."
           >
             {(p) => (
@@ -229,7 +229,7 @@ export function Configuracoes({ aoSair }: { aoSair: () => void }) {
         </p>
       </Painel>
 
-      <Painel titulo="Mapa de status CS3">
+      <Painel titulo="Mapa de status SC3">
         <div className="rolagem-tabela">
           <table className="densidade-compacta">
             <thead>
@@ -298,7 +298,7 @@ export function Configuracoes({ aoSair }: { aoSair: () => void }) {
         </div>
         <Aviso tipo="atencao" titulo="Divergência conhecida na origem.">
           A planilha legada menciona três cobranças para incidentes num lugar e usa duas nos cálculos. Nenhuma das duas regras foi assumida.
-          Mesmo depois de confirmada, a regra só recomenda acompanhamento: o aplicativo nunca encerra chamados no CS3.
+          Mesmo depois de confirmada, a regra só recomenda acompanhamento: o aplicativo nunca encerra chamados no SC3.
         </Aviso>
       </Painel>
 

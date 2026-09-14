@@ -58,7 +58,7 @@ export function FormularioChamado({ ticket, aoCancelar, aoSalvar }: { ticket?: T
             <Campo rotulo="Estimativa (minutos)">{p => <input {...p} type="number" min="0" step="1" value={dados.estimativa} onChange={e => mudar('estimativa', e.target.value)} placeholder="Sem estimativa" />}</Campo>
           </div>
           <Campo rotulo="Próxima ação">{p => <textarea {...p} rows={3} value={dados.proximaAcao} onChange={e => mudar('proximaAcao', e.target.value)} />}</Campo>
-          {ticket?.oficial && <p className="rodape-nota">As alterações ficam no seu acompanhamento e serão mantidas nas próximas importações. Os dados originais do CS3 continuam disponíveis no detalhe.</p>}
+          {ticket?.oficial && <p className="rodape-nota">As alterações ficam no seu acompanhamento e serão mantidas nas próximas importações. Os dados originais do SC3 continuam disponíveis no detalhe.</p>}
           <div className="acoes-linha"><button type="submit">{enviando ? 'Salvando…' : ticket ? 'Salvar alterações' : 'Criar chamado'}</button><button type="button" className="secundario" onClick={aoCancelar}>Cancelar</button></div>
         </fieldset>
         {modo === 'demonstrativo' && <p className="rodape-nota">Demonstração: as alterações duram apenas nesta sessão.</p>}

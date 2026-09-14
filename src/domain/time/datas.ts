@@ -126,7 +126,7 @@ export interface CarimboFonte {
 export function lerCarimboCs3(bruto: string): { ok: true; valor: CarimboFonte } | { ok: false; detalhe: string } {
   const limpo = bruto.replace(/ /g, ' ').trim();
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(limpo);
-  if (!m) return { ok: false, detalhe: `Data não reconhecida no perfil CS3: "${bruto}"` };
+  if (!m) return { ok: false, detalhe: `Data não reconhecida no perfil SC3: "${bruto}"` };
   const dia = Number(m[1]);
   const mes = Number(m[2]);
   const ano = Number(m[3]);

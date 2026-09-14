@@ -1,11 +1,12 @@
 /**
  * Detalhe do chamado (secção 4.4).
  *
- * Seções: Resumo · Dados CS3 · Meu acompanhamento · Apontamentos · Follow-ups ·
+ * Seções: Resumo · Dados SC3 · Meu acompanhamento · Apontamentos · Follow-ups ·
  * Histórico. Fica sempre claro o que veio do CSV, do XLSM e do aplicativo.
  * A soma principal nunca inclui duas vezes um apontamento compartilhado.
  */
 
+import { FormularioSc3 } from './FormularioSc3';
 import { FormularioChamado } from './FormularioChamado';
 import { useState } from 'react';
 import { useApp } from '../../app/estado';
@@ -16,7 +17,7 @@ import { esforcoDoTicket } from '../../domain/time/alocacao';
 import { rotularMinutos } from '../../domain/time/duracao';
 
 const ROTULO_ORIGEM: Record<string, string> = {
-  cs3_csv: 'Veio da extração CS3',
+  cs3_csv: 'Veio da extração SC3',
   xlsm: 'Veio da planilha',
   app: 'Registrado neste aplicativo',
   derived: 'Calculado pelo aplicativo',
@@ -25,6 +26,7 @@ const ROTULO_ORIGEM: Record<string, string> = {
 export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVoltar: () => void }) {
   const { revisao } = useApp();
   const [editando, setEditando] = useState(false);
+  const [editandoSc3, setEditandoSc3] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
   const ticket = revisao.tickets.find((t) => t.id === ticketId);
@@ -46,6 +48,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
   const notas = revisao.notes.filter((n) => n.ticketIds.includes(ticketId));
   const status = exibirStatusCs3(ticket.oficial?.statusBruto, revisao.workspace.mapaStatusCs3);
 
+  if (editandoSc3) return <FormularioSc3 ticket={ticket} aoFechar={() => setEditandoSc3(false)} />;
   if (editando) return <FormularioChamado ticket={ticket} aoCancelar={() => setEditando(false)} aoSalvar={() => setEditando(false)} />;
 
   return (
@@ -71,9 +74,9 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
           >
             Copiar ID
           </button>
-          {/* Só habilitado depois de validar a URL real de detalhe do CS3. */}
-          <button type="button" className="secundario" disabled title="Disponível depois que a URL real de detalhe do CS3 for informada e validada nas Configurações. Nenhum endereço é fabricado a partir do número do chamado.">
-            Abrir no CS3
+          {/* Só habilitado depois de validar a URL real de detalhe do SC3. */}
+          <button type="button" className="secundario" disabled title="Disponível depois que a URL real de detalhe do SC3 for informada e validada nas Configurações. Nenhum endereço é fabricado a partir do número do chamado.">
+            Abrir no SC3
           </button>
           {copiado && <span className="marca marca-ok">ID copiado</span>}
         </div>
@@ -81,7 +84,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
 
       {ticket.provisorio && (
         <Aviso tipo="atencao" titulo="Referência provisória.">
-          Este chamado foi registrado sem uma extração CS3. Se você importar um CSV com a mesma referência, os dados oficiais serão vinculados a ele.
+          Este chamado foi registrado sem uma extração SC3. Se você importar um CSV com a mesma referência, os dados oficiais serão vinculados a ele.
         </Aviso>
       )}
 
@@ -97,23 +100,24 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
             valor={rotularMinutos(esforco.compartilhadoSemRateioMinutos)}
             definicao="Informativo. Não entra na soma principal do chamado até o rateio ser definido."
           />
-          <Indicador rotulo="Status CS3" valor={status.bruto === '' ? '—' : status.amigavel} detalhe={status.naoMapeado && status.bruto ? 'Valor não mapeado' : undefined} />
+          <Indicador rotulo="Status SC3" valor={status.bruto === '' ? '—' : status.amigavel} detalhe={status.naoMapeado && status.bruto ? 'Valor não mapeado' : undefined} />
           <Indicador rotulo="Andamento pessoal" valor={estado?.andamentoPessoal ?? '—'} />
         </div>
       </Painel>
 
-      <Painel titulo="Dados CS3">
+      <Painel titulo="Dados SC3" acao={<button type="button" className="secundario" onClick={() => setEditandoSc3(true)}>Editar dados SC3</button>}>
         {!ticket.oficial ? (
-          <EstadoVazio titulo="Sem dados oficiais">Nenhuma extração CS3 trouxe este chamado até agora.</EstadoVazio>
+          <EstadoVazio titulo="Sem dados oficiais">Nenhuma extração SC3 trouxe este chamado até agora.</EstadoVazio>
         ) : (
           <>
             <Aviso tipo="informacao">
-              Estes campos vêm da extração oficial e só mudam com uma versão mais recente do CS3. Eles não são editáveis aqui.
+              Você pode editar estes dados na Central. Campos alterados manualmente prevalecem nas próximas importações; os demais continuam sendo atualizados pelo CSV.
             </Aviso>
+            {Object.keys(ticket.ajustesSc3 ?? {}).length > 0 && <p className="rodape-nota">Este registro tem ajustes manuais nos dados SC3. Para voltar à extração, use “Restaurar valores do último CSV” no formulário.</p>}
             <div className="rolagem-tabela">
               <table className="densidade-compacta">
                 <tbody>
-                  <Linha rotulo="Título oficial" valor={ticket.oficial.title} />
+                  <Linha rotulo="Título SC3" valor={ticket.oficial.title} />
                   <Linha rotulo="Status (bruto)" valor={ticket.oficial.statusBruto} />
                   <Linha rotulo="Responsável" valor={ticket.oficial.assignedTo} />
                   <Linha rotulo="Abertura informada" valor={ticket.oficial.startTimeBruto} vazio="Sem data de abertura conhecida" />
@@ -124,7 +128,15 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
                   <Linha rotulo="Grupo responsável" valor={ticket.oficial.assignmentGroup} />
                   <Linha rotulo="Referência externa" valor={ticket.oficial.external} />
                   <Linha rotulo="Reference ID" valor={ticket.oficial.referenceId} />
-                  <Linha rotulo="Tags" valor={ticket.oficial.tags.filter(Boolean).join(' · ') || null} />
+                  <Linha rotulo="Tags" valor={ticket.oficial.tags.map((t, i) => t ? `Tag ${i + 1}: ${t}` : null).filter(Boolean).join(' · ') || null} />
+                  <Linha rotulo="Relatado por" valor={ticket.oficial.reportedBy} />
+                  <Linha rotulo="CI relatado" valor={ticket.oficial.reportedCi} />
+                  <Linha rotulo="CI do dispositivo" valor={ticket.oficial.deviceCi} />
+                  <Linha rotulo="CI afetado" valor={ticket.oficial.affectedCi} />
+                  <Linha rotulo="Tipo informado" valor={ticket.oficial.typeBruto} />
+                  <Linha rotulo="Status de escalonamento" valor={ticket.oficial.escalationStatus} />
+                  <Linha rotulo="Última fonte de conhecimento" valor={ticket.oficial.lastUsedKnowledgeSource} />
+                  {Object.entries(ticket.oficial.extras).map(([nome, valor]) => <Linha key={nome} rotulo={nome} valor={valor} />)}
                 </tbody>
               </table>
             </div>
@@ -142,7 +154,7 @@ export function DetalheChamado({ ticketId, aoVoltar }: { ticketId: Uuid; aoVolta
         ) : (
           <>
             <Aviso tipo="informacao">
-              Estes campos são seus. Editá-los não altera a origem nem o CS3, e o atualizador de dados oficiais nunca os sobrescreve.
+              Estes campos são seus. Editá-los não altera a origem nem o SC3, e o atualizador de dados oficiais nunca os sobrescreve.
             </Aviso>
             <dl className="resumo-acompanhamento">
               <div><dt>Título</dt><dd>{estado.tituloPessoal ?? ticket.oficial?.title ?? '—'}</dd></div>
