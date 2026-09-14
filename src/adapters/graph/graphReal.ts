@@ -88,6 +88,8 @@ export class GraphReal implements ClienteGraph {
       eTagPresente: Boolean(item.eTag),
       pasta: item.folder !== undefined,
       correspondeAoEnviado: esperado === undefined ? undefined : item.description === esperado,
+      estruturaSemDados: item.description?.replace(/[\p{L}\p{N}_\-]/gu, 'x'),
+      aspasHtml: item.description?.includes('&quot;'),
     }));
   }
 
