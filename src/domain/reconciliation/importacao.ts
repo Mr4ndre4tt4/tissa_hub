@@ -1109,6 +1109,8 @@ export function aplicarPrevia(
   decisoes: DecisoesDaCarga,
   operationId: string,
 ): ResultadoAplicacao {
+  const validade = validarPrevia(previa, revisaoBase, previa.documento.sha256);
+  if (!validade.valida) throw new Error(validade.detalhe);
   const r: Revision = estruturaClonada(revisaoBase);
   const instante = agora();
 

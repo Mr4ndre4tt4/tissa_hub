@@ -5,9 +5,10 @@ Aplicação de página única em React + TypeScript + Vite, sem servidor própri
 sem banco de dados externo.
 
 > **Estado atual.** O domínio, os leitores de fontes, a conciliação, as métricas
-> e as sete telas estão implementados e testados. **Nenhuma conta Microsoft foi
-> conectada, nada foi gravado no OneDrive e o aplicativo não foi publicado** — a
-> integração depende de configuração que ainda não existe. O relatório completo,
+> e as sete telas estão implementados e testados. A interface tem publicação no
+> GitHub Pages, mas a validação completa de gravação e concorrência na conta
+> Microsoft real continua pendente. A revisão de importação e recuperação está
+> em [`docs/REVISAO_IMPORTACAO_2026-09-14.md`](docs/REVISAO_IMPORTACAO_2026-09-14.md). O relatório original,
 > com o que foi testado e o que não foi, está em
 > [`docs/RELATORIO_DE_ENTREGA.md`](docs/RELATORIO_DE_ENTREGA.md).
 
@@ -38,6 +39,8 @@ Especificação de origem: `ESPECIFICACAO_FINAL_PARA_IA.md`, versão 4.0.
   follow-up, retenção e diagnóstico.
 
 ## Começar
+
+Use Node.js 22, como no workflow de publicação.
 
 ```bash
 npm install
@@ -78,7 +81,7 @@ aplicativo Microsoft com esse endereço como redirect URI, definir a variável
 ## Verificar
 
 ```bash
-npm test                    # 218 testes sintéticos
+npm test                    # 300 testes sintéticos e de interface
 npx tsc -b                  # tipagem
 npm run build               # build de produção
 

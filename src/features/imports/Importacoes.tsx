@@ -49,6 +49,8 @@ export function Importacoes() {
   const [previa, setPrevia] = useState<Previa | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [lendo, setLendo] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const confirmandoRef = useRef(false);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
   const [resultado, setResultado] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export function Importacoes() {
   const carregar = async (entrada: Entrada, arquivo: File) => {
     setErro(null);
     setResultado(null);
+    setPrevia(null);
     setLendo(true);
     try {
       const bytes = new Uint8Array(await arquivo.arrayBuffer());
@@ -80,7 +83,12 @@ export function Importacoes() {
         const leitura = lerXlsmCentral(livro);
         setPrevia(prepararSelecao(previaXlsm(revisao, documento, leitura)));
       } else {
-        const texto = new TextDecoder('utf-8').decode(bytes);
+        let texto: string;
+        try {
+          texto = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        } catch {
+          throw new ErroDeCsv('O CSV não está em UTF-8 válido. Exporte novamente como CSV UTF-8, separado por ponto e vírgula. Nenhum texto foi substituído e nenhuma carga foi aplicada.');
+        }
         const linhas = analisarCsv(texto);
         const deteccao = detectarPerfil((linhas[0]?.campos ?? []).map((c) => c.trim()));
         if (!deteccao.ok) throw new ErroDeCsv(deteccao.detalhe);
@@ -118,26 +126,43 @@ export function Importacoes() {
   };
 
   const confirmar = async () => {
-    if (!previa) return;
+    if (!previa || lendo || confirmandoRef.current) return;
     // Revalida a revisão-base antes de aplicar (secção 8.1).
     const validade = validarPrevia(previa, revisao, previa.documento.sha256);
     if (!validade.valida) {
       setErro(validade.detalhe);
-      setPrevia(null);
       return;
     }
 
     const decisoes = { itensAceitos: selecionados, itensExcluidos: excluidos, decisoesDeIssues: new Map() };
     let aplicados = 0;
-    await mutar('commitImport', (base) => {
-      const r = aplicarPrevia(base, previa, decisoes, crypto.randomUUID());
-      aplicados = r.aplicados;
-      return r.revisao;
-    });
-    setResultado(
-      `Carga confirmada: ${aplicados} registro(s) aplicado(s), ${previa.issues.length} pendência(s) enviada(s) para a caixa de conciliação.`,
-    );
-    setPrevia(null);
+    confirmandoRef.current = true;
+    setConfirmando(true);
+    setErro(null);
+    try {
+      const estado = await mutar('commitImport', (base) => {
+        const r = aplicarPrevia(base, previa, decisoes, crypto.randomUUID());
+        aplicados = r.aplicados;
+        return r.revisao;
+      });
+      if (estado !== 'confirmado' && estado !== 'ja_aplicado') {
+        setErro(estado === 'incerto'
+          ? 'A gravação ainda não foi confirmada. A prévia foi mantida; releia a base antes de reenviar o arquivo.'
+          : estado === 'conflito'
+            ? 'A base mudou em outra sessão. A carga não foi confirmada. Selecione novamente o arquivo para recalcular a prévia.'
+            : 'A carga não foi confirmada. A prévia foi mantida. Confira o aviso de gravação antes de tentar novamente.');
+        return;
+      }
+      setResultado(
+        `Carga confirmada: ${aplicados} registro(s) aplicado(s), ${previa.issues.length} pendência(s) enviada(s) para a caixa de conciliação.`,
+      );
+      setPrevia(null);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível confirmar a carga. A prévia foi mantida.');
+    } finally {
+      confirmandoRef.current = false;
+      setConfirmando(false);
+    }
   };
 
   const pendencias = revisao.issues.filter((i) => i.estado === 'aberta' || i.estado === 'adiada');
@@ -167,7 +192,7 @@ export function Importacoes() {
                 id={`entrada-${entrada}`}
                 type="file"
                 accept={entrada === 'xlsm' ? '.xlsm,.xlsx' : '.csv'}
-                disabled={lendo}
+                disabled={lendo || confirmando}
                 ref={(el) => {
                   entradasRef.current[entrada] = el;
                 }}
@@ -254,7 +279,7 @@ export function Importacoes() {
                         style={{ width: 'auto', minHeight: 'auto' }}
                         aria-label={`Incluir ${i.rotulo}`}
                         checked={selecionados.has(i.id)}
-                        disabled={i.operacao.tipo === 'nenhuma'}
+                        disabled={confirmando || i.operacao.tipo === 'nenhuma'}
                         onChange={(e) => {
                           const s = new Set(selecionados);
                           const x = new Set(excluidos);
@@ -315,11 +340,11 @@ export function Importacoes() {
           {previa.itens.length > 300 && <p className="rodape-nota">Mostrando os primeiros 300 de {previa.itens.length} itens.</p>}
 
           <div className="acoes-linha" style={{ marginTop: 'var(--e5)' }}>
-            <button type="button" className="secundario" onClick={() => setPrevia(null)}>
+            <button type="button" className="secundario" disabled={confirmando} onClick={() => setPrevia(null)}>
               Descartar prévia
             </button>
-            <button type="button" onClick={() => void confirmar()} disabled={selecionados.size === 0}>
-              Confirmar {selecionados.size} registro(s)
+            <button type="button" onClick={() => void confirmar()} disabled={selecionados.size === 0 || lendo || confirmando}>
+              {confirmando ? 'Confirmando…' : `Confirmar ${selecionados.size} registro(s)`}
             </button>
           </div>
           <p className="rodape-nota">

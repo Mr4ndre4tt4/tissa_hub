@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { GraphSimulado } from '../src/adapters/graph/graphSimulado';
 import { ErroGraph } from '../src/adapters/graph/cliente';
 import { BaseCorrompida, RecuperacaoNecessaria, RepositorioOneDrive } from '../src/adapters/storage/repositorio';
@@ -37,6 +37,44 @@ function acrescentar(minutos: number, data = '2026-09-01') {
 }
 
 describe('secção 16.3 — inicialização', () => {
+  it('não confirma a criação se o servidor não publicar o ponteiro', async () => {
+    const graph = new GraphSimulado();
+    const repo = new RepositorioOneDrive(graph, 'conta-a');
+    await repo.inicializar();
+    vi.spyOn(graph, 'atualizarDescricao').mockImplementation(async (id) => graph.obterItem(id));
+    const r = await repo.publicarRevisaoInicial(revisaoInicial(novoWorkspace()), 'init');
+    expect(r.estado).toBe('incerto');
+    expect(await repo.listarRevisoes()).toHaveLength(1);
+  });
+
+  it('não cria uma base nova sobre uma revisão órfã', async () => {
+    const graph = new GraphSimulado();
+    const { repo } = await baseInicializada(graph);
+    const { item } = await repo.lerCabeca();
+    await graph.atualizarDescricao(item.id, '', item.eTag);
+    await expect(repo.publicarRevisaoInicial(revisaoInicial(novoWorkspace()), 'outra')).rejects.toBeInstanceOf(RecuperacaoNecessaria);
+    expect(await repo.listarRevisoes()).toHaveLength(1);
+  });
+
+  it('confere os bytes antes de publicar a revisão inicial', async () => {
+    const graph = new GraphSimulado();
+    const repo = new RepositorioOneDrive(graph, 'conta-a');
+    await repo.inicializar();
+    vi.spyOn(graph, 'baixarConteudo').mockResolvedValue(new TextEncoder().encode('corrompido'));
+    const r = await repo.publicarRevisaoInicial(revisaoInicial(novoWorkspace()), 'init');
+    expect(r.estado).toBe('erro');
+    expect((await repo.lerCabeca()).ponteiro).toBeNull();
+  });
+
+  it('confirma a criação por releitura quando a resposta do PATCH se perde', async () => {
+    const graph = new GraphSimulado();
+    const repo = new RepositorioOneDrive(graph, 'conta-a');
+    await repo.inicializar();
+    graph.falhas.perderRespostaDoProximoPatch = true;
+    const r = await repo.publicarRevisaoInicial(revisaoInicial(novoWorkspace()), 'init');
+    expect(r.estado).toBe('confirmado');
+    expect(await repo.confirmarPorRecibo('init')).toBe(true);
+  });
   it('cria a estrutura de pastas com nomes fixos', async () => {
     const graph = new GraphSimulado();
     const repo = new RepositorioOneDrive(graph, 'conta-a');
@@ -89,6 +127,35 @@ describe('secção 16.3 — inicialização', () => {
 });
 
 describe('recuperarApontandoPara — recuperação manual (secção 16.3)', () => {
+  it('não confirma recuperação se o PATCH não persistiu a descrição', async () => {
+    const graph = new GraphSimulado();
+    const { repo } = await baseInicializada(graph);
+    const { item, ponteiro } = await repo.lerCabeca();
+    await graph.atualizarDescricao(item.id, '', item.eTag);
+    vi.spyOn(graph, 'atualizarDescricao').mockImplementation(async (id) => graph.obterItem(id));
+    const r = await repo.recuperarApontandoPara(ponteiro!.itemId);
+    expect(r.estado).toBe('incerto');
+  });
+
+  it('recusa revisão sem recibo antes de alterar o ponteiro', async () => {
+    const graph = new GraphSimulado();
+    const repo = new RepositorioOneDrive(graph, 'conta-a');
+    const estrutura = await repo.inicializar();
+    const bytes = new TextEncoder().encode(JSON.stringify(revisaoInicial(novoWorkspace())));
+    const arquivo = await graph.enviarConteudo(estrutura.revisoesId, 'sem-recibo.json', bytes);
+    const r = await repo.recuperarApontandoPara(arquivo.id);
+    expect(r.estado).toBe('erro');
+    expect((await repo.lerCabeca()).ponteiro).toBeNull();
+  });
+
+  it('recusa JSON malformado com um resultado legível', async () => {
+    const graph = new GraphSimulado();
+    const repo = new RepositorioOneDrive(graph, 'conta-a');
+    const estrutura = await repo.inicializar();
+    const arquivo = await graph.enviarConteudo(estrutura.revisoesId, 'invalido.json', new TextEncoder().encode('{'));
+    await expect(repo.recuperarApontandoPara(arquivo.id)).resolves.toMatchObject({ estado: 'erro' });
+    expect((await repo.lerCabeca()).ponteiro).toBeNull();
+  });
   it('aponta a base para a revisão escolhida quando o ponteiro está vazio', async () => {
     const graph = new GraphSimulado();
     const { repo } = await baseInicializada(graph);

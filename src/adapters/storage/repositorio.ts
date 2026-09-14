@@ -335,7 +335,7 @@ export class RepositorioOneDrive {
   /** Publica a primeira revisão de uma base nova. */
   async publicarRevisaoInicial(revisao: Revision, operationId: string): Promise<ResultadoSalvar> {
     const { revisoesId } = this.exigirEstrutura();
-    const { item, ponteiro } = await this.lerCabeca();
+    const { item, ponteiro } = await this.carregarRevisaoAtiva();
 
     if (ponteiro) {
       // Outra máquina já inicializou: usamos a base existente (AC-064).
@@ -356,12 +356,20 @@ export class RepositorioOneDrive {
       ],
     };
 
+    const problemas = validarInvariantes(comConta);
+    if (problemas.length > 0) {
+      return { estado: 'invalido', problemas: problemas.map((p) => `${p.codigo}: ${p.detalhe}`) };
+    }
+
     const bytes = codificador.encode(JSON.stringify(comConta));
     const hash = await sha256Hex(bytes);
     const nome = `rev-${comConta.criadoEm.replace(/[:.]/g, '-')}-${comConta.revisionId}.json`;
 
     try {
       const itemRevisao = await this.graph.enviarConteudo(revisoesId, nome, bytes);
+      if (await sha256Hex(await this.graph.baixarConteudo(itemRevisao.id)) !== hash) {
+        return { estado: 'erro', detalhe: 'Os bytes da revisão inicial não conferem. O ponteiro não foi publicado; use a recuperação para revisar o arquivo gravado.' };
+      }
       await this.graph.atualizarDescricao(
         item.id,
         serializarPonteiro({ version: 1, workspaceId: comConta.workspaceId, revisionId: comConta.revisionId, itemId: itemRevisao.id, sha256: hash }),
@@ -376,10 +384,15 @@ export class RepositorioOneDrive {
           detalhe: 'Outra sessão inicializou a base ao mesmo tempo. A base existente foi aberta; nenhuma base paralela foi criada.',
         };
       }
-      if (e instanceof ErroGraph) return this.traduzirErro(e);
-      throw e;
+      if (e instanceof ErroGraph && e.codigo === 'incerto') {
+        if (!await this.confirmarPorRecibo(operationId)) return this.traduzirErro(e);
+      } else if (e instanceof ErroGraph) return this.traduzirErro(e);
+      else throw e;
     }
 
+    if (!await this.confirmarPorRecibo(operationId)) {
+      return { estado: 'incerto', detalhe: 'A revisão inicial foi enviada, mas a base ativa não pôde ser confirmada. Use Tentar de novo para reler a base e acessar a recuperação; não crie outra base.' };
+    }
     return {
       estado: 'confirmado',
       revisao: comConta,
@@ -448,22 +461,34 @@ export class RepositorioOneDrive {
       revisao = JSON.parse(decodificador.decode(bytes)) as Revision;
     } catch (e) {
       if (e instanceof ErroGraph) return this.traduzirErro(e);
-      throw e;
+      return { estado: 'erro', detalhe: 'O arquivo escolhido não contém uma revisão JSON válida. Nenhum ponteiro foi alterado.' };
     }
 
-    if (revisao.schemaVersion !== SCHEMA_VERSION) {
+    if (!revisao || revisao.schemaVersion !== SCHEMA_VERSION) {
       return {
         estado: 'erro',
-        detalhe: `A revisão usa a versão de schema ${revisao.schemaVersion}, incompatível com esta versão do aplicativo.`,
+        detalhe: 'A revisão usa um schema ausente ou incompatível com esta versão do aplicativo.',
       };
+    }
+    if (!revisao.workspace || !Array.isArray(revisao.receipts)) {
+      return { estado: 'erro', detalhe: 'A revisão está incompleta. Nenhum ponteiro foi alterado.' };
     }
     // Uma segunda conta nunca recupera a base da primeira (AC-057).
     if (revisao.workspace.contaHomeId !== null && revisao.workspace.contaHomeId !== this.contaHomeId) {
       return { estado: 'erro', detalhe: 'Esta revisão pertence a outra conta Microsoft e não pode ser recuperada com a conta atual.' };
     }
-    const problemas = validarInvariantes(revisao);
+    let problemas;
+    try {
+      problemas = validarInvariantes(revisao);
+    } catch {
+      return { estado: 'erro', detalhe: 'A estrutura da revisão está incompleta ou inválida. Nenhum ponteiro foi alterado.' };
+    }
     if (problemas.length > 0) {
       return { estado: 'invalido', problemas: problemas.map((p) => `${p.codigo}: ${p.detalhe}`) };
+    }
+    const recibo = revisao.receipts[revisao.receipts.length - 1];
+    if (!recibo?.operationId) {
+      return { estado: 'erro', detalhe: 'A revisão recuperada não tem nenhum recibo registrado. Nenhum ponteiro foi alterado.' };
     }
 
     let descricao: string;
@@ -484,15 +509,22 @@ export class RepositorioOneDrive {
           detalhe: 'Outra sessão publicou primeiro durante a recuperação. Nada foi sobrescrito.',
         };
       }
-      if (e instanceof ErroGraph) return this.traduzirErro(e);
-      throw e;
+      if (!(e instanceof ErroGraph && e.codigo === 'incerto')) {
+        if (e instanceof ErroGraph) return this.traduzirErro(e);
+        throw e;
+      }
     }
 
-    const recibo = revisao.receipts[revisao.receipts.length - 1];
-    if (!recibo) {
-      return { estado: 'erro', detalhe: 'A revisão recuperada não tem nenhum recibo registrado.' };
+    try {
+      const ativa = await this.carregarRevisaoAtiva();
+      if (ativa.revisao?.workspaceId === revisao.workspaceId &&
+          this.reciboDe(ativa.revisao, recibo.operationId)) {
+        return { estado: 'confirmado', revisao: ativa.revisao, recibo };
+      }
+    } catch {
+      // Um PATCH aceito, ou sem resposta, ainda exige confirmação pela leitura.
     }
-    return { estado: 'confirmado', revisao, recibo };
+    return { estado: 'incerto', detalhe: 'A recuperação não pôde ser confirmada pela releitura da base. As revisões continuam preservadas. Use Tentar de novo antes de repetir.' };
   }
 
   private traduzirErro(e: ErroGraph): ResultadoSalvar {

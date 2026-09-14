@@ -47,6 +47,24 @@ function erro(status: number, mensagem: string) {
 }
 
 describe('GraphReal — erro HTTP traz método, caminho e o corpo do erro', () => {
+  it('relê a cabeça sem reutilizar uma resposta HTTP antiga', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => new Response(JSON.stringify({
+      id: 'head', name: 'state-head', folder: {}, eTag: 'e2',
+      description: init?.cache === 'no-store' ? 'ponteiro-atual' : '',
+    }))));
+    expect((await new GraphReal(TOKEN).obterItem('head')).descricao).toBe('ponteiro-atual');
+  });
+  it('uma resposta perdida na publicação é incerta, não prova que nada foi salvo', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    await expect(new GraphReal(TOKEN).atualizarDescricao('head', '{}', 'etag'))
+      .rejects.toMatchObject({ codigo: 'incerto' });
+  });
+
+  it('um 503 ao publicar também exige confirmação por leitura', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => erro(503, 'Service unavailable')));
+    await expect(new GraphReal(TOKEN).atualizarDescricao('head', '{}', 'etag'))
+      .rejects.toMatchObject({ codigo: 'incerto', status: 503 });
+  });
   it('um 404 na leitura de um item identifica a chamada que falhou', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => erro(404, 'Item not found')));
 
@@ -206,6 +224,17 @@ describe('GraphReal — approot() lê ou cria a pasta do aplicativo por nome, na
 });
 
 describe('GraphReal — baixarConteudo() identifica o domínio quando a rede falha', () => {
+  it('pede explicitamente a anotação se a resposta padrão a omitir', async () => {
+    const urlDownload = 'https://public.bn1305.files.1drv.com/teste';
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url === urlDownload) return new Response('bytes-verificados');
+      const dados = new URL(url).searchParams.get('$select')?.includes('@microsoft.graph.downloadUrl')
+        ? { id: 'item-x', '@microsoft.graph.downloadUrl': urlDownload }
+        : { id: 'item-x', name: 'x.json' };
+      return new Response(JSON.stringify(dados));
+    }));
+    expect(new TextDecoder().decode(await new GraphReal(TOKEN).baixarConteudo('item-x'))).toBe('bytes-verificados');
+  });
   it('inclui só o domínio da URL de download no erro, nunca o caminho nem a query (a autenticação)', async () => {
     const urlDownload = 'https://public.bn1305.files.1drv.com/y4p/segredo-de-uma-vez?tempauth=abc123';
     vi.stubGlobal(
@@ -239,7 +268,7 @@ describe('GraphReal — baixarConteudo() identifica o domínio quando a rede fal
     await expect(graph.baixarConteudo('item-x')).rejects.toMatchObject({ codigo: 'nao_encontrado' });
   });
 
-  it('lê a URL de download sem `$select` — nunca combinada com outros campos', async () => {
+  it('prioriza a leitura sem `$select` quando ela já fornece a URL', async () => {
     // Reprodução do bug real: mesmo listando explicitamente
     // `@microsoft.graph.downloadUrl` num `$select` com outros campos (`file`,
     // `folder` etc.), a Microsoft devolveu o item sem a anotação contra a

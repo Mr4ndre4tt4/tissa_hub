@@ -341,9 +341,17 @@ export function ProvedorApp({
         setGravacao({ situacao: 'confirmado', mensagem: r.detalhe });
       } else {
         setErroConexao('detalhe' in r ? r.detalhe : 'Não foi possível criar a base.');
+        // O upload pode ter deixado uma revisão sem ponteiro. Descobrir esse
+        // estado agora dá acesso à recuperação e impede nova inicialização.
+        const { revisao: ativa } = await repo.carregarRevisaoAtiva();
+        if (ativa) {
+          setRevisao(ativa);
+          setModo('conectado');
+        }
       }
     } catch (e) {
       setErroConexao(explicar(e));
+      if (e instanceof RecuperacaoNecessaria || e instanceof BaseCorrompida) setModo('recuperacao');
     } finally {
       setProgresso(null);
     }
@@ -364,7 +372,7 @@ export function ProvedorApp({
       }
     } catch (e) {
       setErroConexao(explicar(e));
-      setModo(e instanceof RecuperacaoNecessaria || e instanceof BaseCorrompida ? 'recuperacao' : 'conectado');
+      setModo((anterior) => e instanceof RecuperacaoNecessaria || e instanceof BaseCorrompida ? 'recuperacao' : anterior);
     } finally {
       setProgresso(null);
     }
@@ -419,6 +427,11 @@ export function ProvedorApp({
       const operationId: Uuid = globalThis.crypto.randomUUID();
       setGravacao({ situacao: 'gravando' });
       const repo = repositorioRef.current;
+
+      if (modo !== 'demonstrativo' && (modo !== 'conectado' || !repo)) {
+        setGravacao({ situacao: 'erro', mensagem: 'Abra ou recupere a base antes de gravar alterações.' });
+        return 'erro';
+      }
 
       // Sem conexão, a alteração fica só na memória do navegador — e a mensagem
       // diz exatamente isso. Jamais "Salvo no OneDrive".

@@ -85,12 +85,15 @@ export class GraphReal implements ClienteGraph {
     try {
       resposta = await fetch(`${BASE}${caminho}`, {
         ...init,
+        // A cabeça é mutável. Uma resposta em cache pode simular um ponteiro
+        // vazio ou antigo logo após a publicação.
+        cache: 'no-store',
         headers: cabecalhos,
         body: init.corpoBinario ? (init.corpoBinario as unknown as BodyInit) : init.body,
       });
     } catch (e) {
       // Um erro de transporte nunca é retorno de sucesso (secção 14.3).
-      throw new ErroGraph(`A conexão falhou: ${(e as Error).message}`, 'transporte');
+      throw new ErroGraph(`A conexão falhou: ${(e as Error).message}`, init.method === 'PATCH' ? 'incerto' : 'transporte');
     }
 
     if (!resposta.ok) {
@@ -119,7 +122,8 @@ export class GraphReal implements ClienteGraph {
       const metodo = init.method ?? 'GET';
       const idDaRequisicao = resposta.headers.get('request-id');
       const detalhe = `${metodo} ${caminho} → ${resposta.status} ${mensagem}${idDaRequisicao ? ` (request-id: ${idDaRequisicao})` : ''}`;
-      throw new ErroGraph(detalhe, traduzirStatus(resposta.status), resposta.status, Number.isFinite(retryAfter) ? retryAfter : undefined);
+      const codigo = init.method === 'PATCH' && resposta.status >= 500 ? 'incerto' : traduzirStatus(resposta.status);
+      throw new ErroGraph(detalhe, codigo, resposta.status, Number.isFinite(retryAfter) ? retryAfter : undefined);
     }
 
     return resposta;
@@ -226,13 +230,21 @@ export class GraphReal implements ClienteGraph {
    * comentário em `obterItem()`: nesta conta, `@microsoft.graph.downloadUrl`
    * não veio de forma confiável quando combinada com um `$select` explícito
    * — mesmo listando a própria anotação — mas uma leitura simples do item,
-   * sem restringir campos, deve trazer a anotação por padrão (comportamento
-   * documentado pela Microsoft para itens de arquivo).
+   * sem restringir campos, deve trazer a anotação por padrão. Se ela vier
+   * ausente, uma segunda leitura pede somente id e a anotação conforme o
+   * exemplo oficial para JavaScript; não repete upload nem segue /content.
    */
   private async obterUrlDeDownload(itemId: string): Promise<string | undefined> {
     const r = await this.requisitar(`/me/drive/items/${encodeURIComponent(itemId)}`);
     const corpo = (await r.json()) as RespostaItem;
-    return corpo['@microsoft.graph.downloadUrl'];
+    if (corpo['@microsoft.graph.downloadUrl']) return corpo['@microsoft.graph.downloadUrl'];
+    // Algumas respostas omitem a anotação. A forma explícita documentada
+    // para downloads em JavaScript é uma leitura separada, sem misturar
+    // description/file/folder. São no máximo duas leituras, sem repetir PUT.
+    const explicita = await this.requisitar(
+      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,@microsoft.graph.downloadUrl`,
+    );
+    return ((await explicita.json()) as RespostaItem)['@microsoft.graph.downloadUrl'];
   }
 
   async enviarConteudo(paiId: string, nome: string, bytes: Uint8Array): Promise<ItemDrive> {
